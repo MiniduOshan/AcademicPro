@@ -1,14 +1,18 @@
-// --- src/pages/Auth.jsx (FIXED) ---
+// src/pages/Auth.jsx
 
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { IoMailOutline, IoLockClosedOutline } from 'react-icons/io5';
-import axios from 'axios'; // <--- NEW: Import Axios
+import { IoMailOutline, IoLockClosedOutline, IoArrowBackOutline, IoPersonOutline } from 'react-icons/io5'; 
+import axios from 'axios'; 
 
-// Backend URL constant (Adjust port if necessary, e.g., 3000)
+// NOTE ON TAILWIND: For these dynamic colors to work reliably, 
+// you must either explicitly add the full class names (e.g., 'bg-blue-600') to your 
+// tailwind.config.js safelist, or use hardcoded classes as shown below.
+const primaryColor = 'blue-600'; 
+const primaryColorHover = 'blue-700';
 const BASE_URL = 'http://localhost:5000'; 
 
-// AuthInput component (Moved outside, kept the same)
+// AuthInput component
 const AuthInput = ({ name, placeholder, type = 'text', icon: Icon, formData, handleChange }) => (
     <div className="relative mb-4">
         <input
@@ -17,8 +21,9 @@ const AuthInput = ({ name, placeholder, type = 'text', icon: Icon, formData, han
             placeholder={placeholder}
             value={formData[name] || ''}
             onChange={handleChange}
-            required
-            className="w-full py-3 pl-12 pr-4 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
+            required={name !== 'firstName' && name !== 'lastName'}
+            // Using hardcoded blue classes to ensure Tailwind works
+            className={`w-full py-3 pl-12 pr-4 border border-gray-300 rounded-lg focus:ring-blue-600 focus:border-blue-600`}
         />
         <Icon className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
     </div>
@@ -35,72 +40,75 @@ const Auth = ({ type }) => {
         password: '',
         confirmPassword: '',
     });
+    const [error, setError] = useState('');
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+        if (error) setError('');
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError('');
         
         const endpoint = isLogin ? '/api/users/login' : '/api/users/signup';
-        const url = `${BASE_URL}${endpoint}`; // Use the defined BASE_URL
+        const url = `${BASE_URL}${endpoint}`;
 
-        // Check if passwords match only during signup
         if (!isLogin && formData.password !== formData.confirmPassword) {
-            alert('Passwords do not match!');
+            setError('Error: Passwords do not match.');
             return;
         }
         
         try {
-            // Send request to the backend
             const { data } = await axios.post(url, formData, {
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
             });
 
-            console.log("Authentication Successful. Data received:", data);
-
-            // Store token and redirect
             localStorage.setItem('token', data.token);
             navigate('/dashboard'); 
             
-        } catch (error) {
-            // Log the detailed error from the backend for debugging
-            const errorMessage = error.response?.data?.message || 'Network Error: Check if backend is running on 5000.';
-            console.error('Auth failed:', error.response || error);
-            alert(`Authentication failed: ${errorMessage}`);
+        } catch (err) {
+            const errorMessage = err.response?.data?.message || 'Network Error: Check if backend is running on 5000.';
+            setError(`Authentication failed: ${errorMessage}`);
         }
     };
 
     return (
-        // ... (rest of the component JSX remains the same) ...
         <div className="min-h-screen flex">
-            <div className="w-full md:w-1/2 flex items-center justify-center p-8 bg-white">
+            {/* Left Side: Form Container */}
+            <div className="w-full md:w-1/2 flex items-center justify-center p-8 bg-white relative">
                 <div className="w-full max-w-md">
-                    {/* ... (Header) ... */}
+                    
+                    {/* 1. BACK TO HOME LINK */}
+                    <Link 
+                        to="/" // <-- Always links to the home page (/)
+                        className={`absolute top-4 left-4 p-2 rounded-full text-blue-600 hover:bg-gray-100 transition-colors`}
+                        aria-label="Go back to home"
+                    >
+                        <IoArrowBackOutline className="w-6 h-6" />
+                    </Link>
+
+                    {/* Header */}
+                    <h1 className="text-3xl font-bold text-gray-800 mt-10 mb-2">
+                        {isLogin ? 'Welcome Back!' : 'Create an Account'}
+                    </h1>
+                    <p className="text-gray-500 mb-8">
+                        {isLogin ? 'Sign in to access your dashboard.' : 'Enter your details to get started.'}
+                    </p>
+
+                    {/* Error Display */}
+                    {error && (
+                        <div className="p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-lg" role="alert">
+                            {error}
+                        </div>
+                    )}
+
                     <form onSubmit={handleSubmit}>
+                        
                         {!isLogin && (
-                            <div className="flex space-x-4 mb-4">
-                                <input
-                                    type="text"
-                                    name="firstName"
-                                    placeholder="First Name"
-                                    value={formData.firstName}
-                                    onChange={handleChange}
-                                    required
-                                    className="w-1/2 py-3 px-4 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
-                                />
-                                <input
-                                    type="text"
-                                    name="lastName"
-                                    placeholder="Last Name"
-                                    value={formData.lastName}
-                                    onChange={handleChange}
-                                    required
-                                    className="w-1/2 py-3 px-4 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
-                                />
+                            <div className="flex space-x-4">
+                                <AuthInput name="firstName" placeholder="First Name (Optional)" icon={IoPersonOutline} formData={formData} handleChange={handleChange} />
+                                <AuthInput name="lastName" placeholder="Last Name (Optional)" icon={IoPersonOutline} formData={formData} handleChange={handleChange} />
                             </div>
                         )}
                         
@@ -113,19 +121,19 @@ const Auth = ({ type }) => {
 
                         {isLogin && (
                             <div className="text-right mb-6">
-                                <Link to="/forgot-password" className="text-sm text-primary-500 hover:underline">Forgot Password?</Link>
+                                <Link to="/forgot-password" className={`text-sm text-blue-600 hover:underline`}>Forgot Password?</Link>
                             </div>
                         )}
 
                         <button
                             type="submit"
-                            className="w-full py-3 bg-primary-500 text-white text-lg font-semibold rounded-lg shadow-md hover:bg-primary-600 transition-colors"
+                            className={`w-full py-3 bg-blue-600 text-white text-lg font-semibold rounded-lg shadow-md hover:bg-blue-700 transition-colors`}
                         >
                             {isLogin ? 'Login Now' : 'Signup Now'}
                         </button>
                     </form>
 
-                    {/* ... (OR divider and Signup/Login Link) ... */}
+                    {/* OR divider and Signup/Login Link */}
                     <div className="flex items-center my-6">
                         <div className="flex-grow border-t border-gray-300"></div>
                         <span className="flex-shrink mx-4 text-gray-500">OR</span>
@@ -134,16 +142,20 @@ const Auth = ({ type }) => {
 
                     <Link 
                         to={isLogin ? '/signup' : '/login'}
-                        className="w-full block text-center py-3 border border-primary-500 text-primary-500 text-lg font-semibold rounded-lg shadow-sm hover:bg-primary-50 transition-colors"
+                        className={`w-full block text-center py-3 border border-blue-600 text-blue-600 text-lg font-semibold rounded-lg shadow-sm hover:bg-blue-50 transition-colors`}
                     >
-                        {isLogin ? 'Signup Now' : 'Login Now'}
+                        {isLogin ? 'Create Account' : 'Login to Existing Account'}
                     </Link>
                 </div>
             </div>
 
-            {/* Right Illustration/Image */}
-            <div className="hidden md:flex md:w-1/2 bg-gray-100 items-center justify-center p-8">
-                {/* Illustration Placeholder */}
+            {/* Right Side: Illustration/Image */}
+            <div className={`hidden md:flex md:w-1/2 bg-blue-50 items-center justify-center p-8`}>
+                <div className={`text-blue-600 text-center`}>
+                    <IoLockClosedOutline className="w-16 h-16 mx-auto mb-4" />
+                    <h2 className="text-xl font-semibold">Secure Authentication</h2>
+                    <p className="text-gray-600">Your privacy and data security are our priority.</p>
+                </div>
             </div>
         </div>
     );

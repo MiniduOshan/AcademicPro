@@ -1,43 +1,73 @@
-import React, { useState } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+// src/App.jsx
 
-// Import all local page components with the .jsx extension
+import React from 'react';
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
+
+// Import Header, Footer, and Page components
+import Header from './components/Header.jsx'; 
+import Footer from './components/Footer.jsx'; 
+
 import LandingPage from './pages/LandingPage.jsx';
 import Auth from './pages/Auth.jsx';
+// Placeholder Pages 
+import About from './pages/About.jsx';
+import Contact from './pages/Contact.jsx';
+
 import DashboardLayout from './pages/Dashboard.jsx';
-import DashboardSummary from './pages/DashboardSummary.jsx'; // Summary View
+import DashboardSummary from './pages/DashboardSummary.jsx';
 import List from './pages/List.jsx';
 import MyGroups from './pages/MyGroups.jsx';
-import GroupDetails from './pages/GroupDetails.jsx'; // Group Details View
+import GroupDetails from './pages/GroupDetails.jsx';
 import Courses from './pages/Courses.jsx';
 import Profile from './pages/Profile.jsx';
 import CourseDetails from './pages/CourseDetails.jsx';
 
-// Note: We remove the global Header import to avoid duplicating the header bar inside DashboardLayout.
 
 // Simple Auth Check Simulation
 const isAuthenticated = () => {
-    // In a real application, this checks if a valid JWT token exists
     return localStorage.getItem('token') !== null;
 };
 
 // Protected Route Wrapper Component
 const ProtectedRoute = ({ children }) => {
-    // If authenticated, render children (the requested page); otherwise, redirect to login.
     return isAuthenticated() ? children : <Navigate to="/login" />;
 };
 
+// Layout component to wrap public pages with both Header AND Footer
+const PublicLayout = () => (
+    <div className="flex flex-col min-h-screen">
+        <Header />
+        {/* The main content area that renders the child route */}
+        <main className="flex-grow">
+            <Outlet />
+        </main>
+        <Footer />
+    </div>
+);
+
 function App() {
     return (
-        // Note: The BrowserRouter should wrap this component in main.jsx/index.jsx
         <> 
             <Routes>
-                {/* Public Routes */}
-                <Route path="/" element={<LandingPage />} />
+                
+                {/* 1. INDEPENDENT AUTH PAGES (NO Header/Footer Layout) */}
+                
+                {/* Login Page: Independent */}
                 <Route path="/login" element={<Auth type="login" />} />
+                
+                {/* Signup Page: Now independent, outside the PublicLayout */}
                 <Route path="/signup" element={<Auth type="signup" />} />
+                
+                
+                {/* 2. PUBLIC PAGES (Routes that **SHOULD** have the Header and Footer via PublicLayout) */}
+                <Route element={<PublicLayout />}>
+                    {/* These pages use the Header and Footer */}
+                    <Route path="/" element={<LandingPage />} />
+                    <Route path="/about" element={<About />} /> 
+                    <Route path="/contact" element={<Contact />} />
+                </Route>
 
-                {/* Protected Routes (Authenticated Access Only) */}
+                {/* 3. PROTECTED ROUTES (Routes using DashboardLayout - No public Header/Footer) */}
                 <Route
                     path="/dashboard"
                     element={
@@ -47,24 +77,12 @@ function App() {
                     }
                 >
                     {/* Nested Routes inside the DashboardLayout */}
-                    
-                    {/* 1. Dashboard Index: Shows the Summary/Indicators View */}
                     <Route index element={<DashboardSummary />} /> 
-                    
-                    {/* 2. Task List (Kanban Board) */}
                     <Route path="list" element={<List />} />
-                    
-                    {/* 3. Group Management: MyGroups component handles the list view */}
                     <Route path="my-groups" element={<MyGroups />} />
-                    
-                    {/* 4. Group Detail: Uses ':groupId' URL parameter for dynamic routing (Discussion Board) */}
                     <Route path="my-groups/:groupId" element={<GroupDetails />} />
-
-                    {/* 5. Courses */}
                     <Route path="courses" element={<Courses />} />
                     <Route path="courses/:courseId" element={<CourseDetails />} />
-                    
-                    {/* 6. Profile */}
                     <Route path="profile" element={<Profile />} />
                 </Route>
 
