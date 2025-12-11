@@ -11,10 +11,14 @@ const NoteSchema = mongoose.Schema(
             type: String,
             required: true,
         },
-        // Link the note to the User who created it
+        status: {
+            type: String,
+            enum: ['To do', 'In progress', 'Done'],
+            default: 'To do'
+        },
         user: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'User', 
+            ref: 'User',
             required: true,
         },
     },

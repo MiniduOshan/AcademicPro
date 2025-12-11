@@ -8,7 +8,7 @@ import Modal from '../components/Modal.jsx';
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'; 
 const STATUS_OPTIONS = ['In progress', 'Done']; 
 
-// --- GroupCard Component (Retained) ---
+// --- GroupCard Component (FIXED) ---
 const GroupCard = ({ group, onViewGroup, onDeleteGroup }) => {
     // Determine if the current user is the admin
     const currentUserId = localStorage.getItem('token') ? JSON.parse(atob(localStorage.getItem('token').split('.')[1])).id : '';
@@ -18,7 +18,8 @@ const GroupCard = ({ group, onViewGroup, onDeleteGroup }) => {
         <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 flex flex-col justify-between">
             <div>
                 <div className="flex justify-between items-start">
-                    <h3 className="text-lg font-semibold text-gray-800">{group.name}</h3>
+                    {/* FIX APPLIED: Added break-words to Group Name */}
+                    <h3 className="text-lg font-semibold text-gray-800 break-words">{group.name}</h3>
                     {isAdmin && (
                         <button 
                             onClick={(e) => { e.stopPropagation(); onDeleteGroup(group._id); }}
@@ -29,7 +30,8 @@ const GroupCard = ({ group, onViewGroup, onDeleteGroup }) => {
                         </button>
                     )}
                 </div>
-                <p className="text-sm text-gray-500 mt-1">{group.description}</p>
+                {/* FIX APPLIED: Added break-words to Description */}
+                <p className="text-sm text-gray-500 mt-1 break-words">{group.description}</p>
             </div>
 
             <div className="mt-4 flex justify-between items-center">
@@ -56,7 +58,6 @@ const GroupCard = ({ group, onViewGroup, onDeleteGroup }) => {
                     </button>
                     <button className={`flex items-center space-x-1 px-3 py-1 text-sm font-medium rounded-lg text-white bg-green-500 hover:bg-green-600 transition-colors`}>
                         <span>{group.status || 'Active'}</span>
-                        <IoChevronDown className="w-4 h-4" />
                     </button>
                 </div>
             </div>
@@ -64,7 +65,7 @@ const GroupCard = ({ group, onViewGroup, onDeleteGroup }) => {
     );
 };
 
-// --- MyGroups Component (Main Logic - FIXED) ---
+// --- MyGroups Component (Main Logic) ---
 const MyGroups = () => {
     const [groups, setGroups] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -203,7 +204,7 @@ const MyGroups = () => {
                     </div>
                     <button 
                         onClick={() => setIsCreateModalOpen(true)}
-                        className="px-6 py-2 bg-primary-500 text-white font-semibold rounded-lg shadow-md hover:bg-primary-600 transition-colors"
+                        className="px-6 py-2 bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-600 transition-colors"
                     >
                         Create New Group
                     </button>
@@ -237,14 +238,14 @@ const MyGroups = () => {
                         <button 
                             onClick={() => setIsCreateModalOpen(false)} 
                             type="button"
-                            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                            className="px-4 py-2 text-gray-700 bg-black-100 rounded-lg hover:bg-gray-200"
                         >
                             Cancel
                         </button>
                         <button 
                             onClick={handleCreateSubmit} 
                             type="submit"
-                            className="px-4 py-2 text-white bg-primary-500 rounded-lg hover:bg-primary-600"
+                            className="px-4 py-2 text-gray-700 bg-black-100 rounded-lg hover:bg-gray-200"
                         >
                             Create Group
                         </button>

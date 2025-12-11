@@ -6,7 +6,7 @@ function Header() {
             <header className="flex justify-between items-center p-6 border-b border-gray-100 max-w-7xl mx-auto">
                     
                 <div className="flex items-center space-x-2">
-                    <img src="/AcademicPro_Logo.svg" alt="AcademicPro Logo" className="w-8 h-8" />
+                    <img src="/logo.png" alt="AcademicPro Logo" className="w-8 h-8" />
                     <span className="text-xl font-bold text-gray-800">AcademicPro</span>
                 </div>
             

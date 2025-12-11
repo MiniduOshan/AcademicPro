@@ -11,9 +11,9 @@ const getUserResponse = (user) => ({
     token: generateToken(user._id),
 });
 
-// @desc    Register a new user (Sign Up)
-// @route   POST /api/users/signup
-// @access  Public
+// @desc 	Register a new user (Sign Up)
+// @route 	POST /api/users/signup
+// @access 	Public
 const registerUser = async (req, res) => {
     const { firstName, lastName, email, password, confirmPassword } = req.body;
 
@@ -45,9 +45,9 @@ const registerUser = async (req, res) => {
     }
 };
 
-// @desc    Auth user & get token (Login)
-// @route   POST /api/users/login
-// @access  Public
+// @desc 	Auth user & get token (Login)
+// @route 	POST /api/users/login
+// @access 	Public
 const authUser = async (req, res) => {
     const { email, password } = req.body;
 
@@ -64,11 +64,10 @@ const authUser = async (req, res) => {
     }
 };
 
-// @desc    Get user ID and name by email
-// @route   GET /api/users/lookup?email=...
-// @access  Public (Used for invitation flow)
+// @desc 	Get user ID and name by email
+// @route 	GET /api/users/lookup?email=...
+// @access 	Public (Used for invitation flow)
 const getUserByEmail = async (req, res) => {
-    // FIX: Retrieve email from query parameters
     const { email } = req.query; 
 
     if (!email) {
@@ -76,7 +75,6 @@ const getUserByEmail = async (req, res) => {
     }
 
     try {
-        // Only select the necessary fields (_id, name)
         const user = await User.findOne({ email }).select('_id firstName lastName'); 
 
         if (!user) {
@@ -87,7 +85,6 @@ const getUserByEmail = async (req, res) => {
             _id: user._id,
             firstName: user.firstName,
             lastName: user.lastName,
-            // The frontend needs the _id to send to the addMember endpoint
         });
 
     } catch (error) {
@@ -96,9 +93,9 @@ const getUserByEmail = async (req, res) => {
     }
 };
 
-// @desc    Get user profile
-// @route   GET /api/users/profile
-// @access  Private (Requires JWT via 'protect' middleware)
+// @desc 	Get user profile (NOW RETURNS new fields)
+// @route 	GET /api/users/profile
+// @access 	Private (Requires JWT via 'protect' middleware)
 const getUserProfile = async (req, res) => {
     const user = req.user; 
 
@@ -109,6 +106,8 @@ const getUserProfile = async (req, res) => {
             lastName: user.lastName,
             username: `${user.firstName} ${user.lastName}`,
             email: user.email,
+            mobileNumber: user.mobileNumber, // <--- NEW FIELD
+            profilePic: user.profilePic,     // <--- NEW FIELD
             createdAt: user.createdAt,
         });
     } else {
@@ -116,17 +115,33 @@ const getUserProfile = async (req, res) => {
     }
 };
 
-// @desc    Update user profile
-// @route   PUT /api/users/profile
-// @access  Private (Requires JWT via 'protect' middleware)
+// @desc 	Update user profile (NOW HANDLES profilePic, mobileNumber, name updates)
+// @route 	PUT /api/users/profile
+// @access 	Private (Requires JWT via 'protect' middleware)
 const updateUserProfile = async (req, res) => {
     const user = await User.findById(req.user._id);
 
     if (user) {
+        // Update name, mobile number, and profile pic
         user.firstName = req.body.firstName || user.firstName;
         user.lastName = req.body.lastName || user.lastName;
-        user.email = req.body.email || user.email;
+        user.mobileNumber = req.body.mobileNumber || user.mobileNumber; 
+        
+        // Allow updating profilePic URL (using !== undefined to allow clearing the field)
+        if (req.body.profilePic !== undefined) { 
+             user.profilePic = req.body.profilePic;
+        }
 
+        // Handle potential email change
+        if (req.body.email && req.body.email !== user.email) {
+             const emailExists = await User.findOne({ email: req.body.email });
+             if (emailExists) {
+                 return res.status(400).json({ message: 'Email already in use.' });
+             }
+             user.email = req.body.email; 
+        }
+
+        // Handle password change logic
         if (req.body.password) {
             if (req.body.password !== req.body.confirmPassword) {
                  return res.status(400).json({ message: 'New passwords do not match' });
@@ -143,11 +158,10 @@ const updateUserProfile = async (req, res) => {
     }
 };
 
-// FIX: Export the new lookup function
 export default {
     registerUser,
     authUser,
-    getUserByEmail, // <--- EXPORTED NEW FUNCTION
+    getUserByEmail, 
     getUserProfile,
-    updateUserProfile,
+    updateUserProfile, // <--- Preserved and updated
 };

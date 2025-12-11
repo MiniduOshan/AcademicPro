@@ -11,6 +11,8 @@ import MyGroups from './pages/MyGroups.jsx';
 import GroupDetails from './pages/GroupDetails.jsx'; // Group Details View
 import Courses from './pages/Courses.jsx';
 import Profile from './pages/Profile.jsx';
+import CourseDetails from './pages/CourseDetails.jsx';
+
 // Note: We remove the global Header import to avoid duplicating the header bar inside DashboardLayout.
 
 // Simple Auth Check Simulation
@@ -60,6 +62,7 @@ function App() {
 
                     {/* 5. Courses */}
                     <Route path="courses" element={<Courses />} />
+                    <Route path="courses/:courseId" element={<CourseDetails />} />
                     
                     {/* 6. Profile */}
                     <Route path="profile" element={<Profile />} />

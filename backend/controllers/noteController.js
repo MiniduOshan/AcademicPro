@@ -54,11 +54,12 @@ const createNote = async (req, res) => {
         res.status(201).json(note);
     } catch (error) {
         // Mongoose validation error might occur if status is not one of the enum values
+        // A better response here would be 400, but keeping 500 for minimal change outside updateNote
         res.status(500).json({ message: error.message });
     }
 };
 
-// @desc    Update a note (Updated to allow status change)
+// @desc    Update a note (FIXED to handle Mongoose validation errors)
 // @route   PUT /api/notes/:id
 // @access  Private
 const updateNote = async (req, res) => {
@@ -74,14 +75,24 @@ const updateNote = async (req, res) => {
             note.content = content !== undefined ? content : note.content;
             note.status = status !== undefined ? status : note.status;
 
-            const updatedNote = await note.save();
-            res.json(updatedNote);
+            // CRITICAL FIX: Use a nested try/catch to specifically handle validation errors on save
+            try {
+                const updatedNote = await note.save();
+                res.json(updatedNote);
+            } catch (validationError) {
+                // If save fails due to Mongoose validation (e.g., bad status enum value)
+                console.error("Mongoose Validation Error on Update:", validationError.message);
+                return res.status(400).json({ message: 'Validation failed: Status value may be invalid.' });
+            }
+
         } else if (note) {
             res.status(401).json({ message: 'Not authorized to update this note' });
         } else {
             res.status(404).json({ message: 'Note not found' });
         }
     } catch (error) {
+        // General server or database error
+        console.error("General Error in updateNote:", error);
         res.status(500).json({ message: error.message });
     }
 };

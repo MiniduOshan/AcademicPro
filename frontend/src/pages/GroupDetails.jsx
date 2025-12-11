@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { IoSend, IoAdd, IoTrashBinOutline } from 'react-icons/io5';
+import { IoSend, IoAdd, IoTrashBinOutline, IoPencil } from 'react-icons/io5';
 import Modal from '../components/Modal.jsx'; // Assuming Modal is available
 
 // CRITICAL FIX: Use the VITE environment variable for dynamic host switching
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'; 
+// Added 'To do' back to the list since it's common for status tracking
 const STATUS_OPTIONS = ['To do', 'In progress', 'Done']; 
 
 
-// --- DiscussionCard Component (Retained) ---
+// --- DiscussionCard Component (Added break-words fix) ---
 const DiscussionCard = ({ discussion }) => (
     <div className="bg-gray-50 p-4 rounded-lg shadow-sm mb-3">
         {/* ... JSX for Discussion Card ... */}
@@ -21,7 +22,8 @@ const DiscussionCard = ({ discussion }) => (
                 {new Date(discussion.createdAt).toLocaleTimeString()}
             </span>
         </div>
-        <p className="text-gray-700">{discussion.text}</p>
+        {/* Added break-words to fix overflow bug */}
+        <p className="text-gray-700 break-words">{discussion.text}</p>
     </div>
 );
 
@@ -66,6 +68,13 @@ const GroupDetails = () => {
     const [newMemberEmail, setNewMemberEmail] = useState('');
     const [isDeleting, setIsDeleting] = useState(false);
     const [isInviting, setIsInviting] = useState(false);
+    
+    // --- NEW STATES FOR ASSIGNMENT ---
+    const [isAssignmentModalOpen, setIsAssignmentModalOpen] = useState(false);
+    const [editingAssignment, setEditingAssignment] = useState({
+        assignmentTitle: '',
+        deadline: '', // ISO string or empty string
+    });
 
     const token = localStorage.getItem('token');
     const config = { headers: { Authorization: `Bearer ${token}` } };
@@ -76,7 +85,7 @@ const GroupDetails = () => {
             currentUserId = JSON.parse(atob(token.split('.')[1])).id;
         } catch (e) { /* ignore */ }
     }
-    const isAdmin = group?.admin?._id === currentUserId; 
+    const isAdmin = group?.admin === currentUserId || group?.admin?._id === currentUserId; 
 
 
     const fetchGroup = async () => {
@@ -101,6 +110,54 @@ const GroupDetails = () => {
     useEffect(() => {
         fetchGroup();
     }, [groupId, token]);
+    
+    // Helper to format date for input[type="date"]
+    const formatDateForInput = (isoDate) => {
+        if (!isoDate) return '';
+        const date = new Date(isoDate);
+        return date.toISOString().split('T')[0];
+    };
+
+    // --- NEW: Open Assignment Modal ---
+    const handleOpenAssignmentModal = () => {
+        setEditingAssignment({
+            assignmentTitle: group?.assignmentTitle || '',
+            deadline: formatDateForInput(group?.deadline), // Format existing date
+        });
+        setIsAssignmentModalOpen(true);
+    };
+
+    // --- NEW: Handle Assignment Submit (Add/Edit) ---
+    const handleAssignmentSubmit = async (e) => {
+        e.preventDefault();
+        
+        const payload = {
+            assignmentTitle: editingAssignment.assignmentTitle,
+            // Deadline is stored as an ISO string
+            deadline: editingAssignment.deadline ? new Date(editingAssignment.deadline).toISOString() : null,
+        };
+
+        if (!isAdmin) {
+            alert("Only the group administrator can set/edit the assignment.");
+            return;
+        }
+
+        try {
+            const updateUrl = `${API_BASE_URL}/api/groups/${groupId}`;
+            const { data } = await axios.put(updateUrl, payload, config);
+            
+            setGroup(prev => ({
+                ...prev,
+                assignmentTitle: data.assignmentTitle,
+                deadline: data.deadline,
+            }));
+
+            setIsAssignmentModalOpen(false);
+        } catch (err) {
+            alert("Failed to update assignment details: " + (err.response?.data?.message || err.message));
+        }
+    };
+
 
     // --- Discussion Logic (Retained) ---
     const handleAddDiscussion = async (e) => {
@@ -114,7 +171,7 @@ const GroupDetails = () => {
                 ...prev,
                 discussions: [...prev.discussions, { 
                     ...newDisc, 
-                    user: { firstName: 'You', _id: currentUserId }
+                    user: { firstName: 'You', _id: currentUserId } 
                 }]
             }));
             setNewComment('');
@@ -124,22 +181,19 @@ const GroupDetails = () => {
         }
     };
 
-    // --- Handle Member Invitation (Lookup + Add Member) ---
+    // --- Handle Member Invitation (Retained) ---
     const handleAddMember = async (e) => {
         e.preventDefault();
         if (!newMemberEmail) return;
         setIsInviting(true);
 
         try {
-            // 1. Look up user by email (Calls /api/users/lookup)
             const lookupUrl = `${API_BASE_URL}/api/users/lookup?email=${newMemberEmail}`;
             const { data: userLookup } = await axios.get(lookupUrl, config);
             const memberId = userLookup._id;
 
-            // 2. Add member using the retrieved ID
             await axios.post(`${API_BASE_URL}/api/groups/${groupId}/members`, { memberId }, config);
 
-            // 3. Update local state
             setGroup(prev => ({
                 ...prev,
                 members: [...prev.members, userLookup] 
@@ -181,7 +235,7 @@ const GroupDetails = () => {
         }
     };
     
-    // --- Handle Assignment Status Change ---
+    // --- Handle Assignment Status Change (Retained) ---
     const handleUpdateAssignmentStatus = async (e) => {
         const newStatus = e.target.value;
         
@@ -190,7 +244,6 @@ const GroupDetails = () => {
              return;
         }
 
-        // Optimistic UI update
         setGroup(prev => ({ ...prev, projectStatus: newStatus }));
 
         try {
@@ -205,7 +258,7 @@ const GroupDetails = () => {
         }
     };
 
-    // --- Handle Group Deletion ---
+    // --- Handle Group Deletion (Retained) ---
     const handleDeleteGroup = async () => {
         if (!window.confirm("WARNING: Are you sure you want to delete this group?")) return;
         
@@ -226,41 +279,78 @@ const GroupDetails = () => {
     if (loading) return <div className="text-center p-10">Loading Group...</div>;
     if (!group) return <div className="text-center p-10 text-red-500">Group not found.</div>;
 
+    // Helper to get color class for status dropdown
+    const getStatusColor = (status) => {
+        if (status === 'Done') return 'bg-green-500 hover:bg-green-600';
+        if (status === 'In progress') return 'bg-yellow-500 hover:bg-yellow-600';
+        return 'bg-blue-500 hover:bg-blue-600';
+    };
+    
+    // Helper to check if deadline has passed
+    const isDeadlinePassed = group.deadline && new Date(group.deadline) < new Date();
+    // Helper to display deadline
+    const displayDeadline = group.deadline ? new Date(group.deadline).toLocaleDateString() : 'N/A';
+
     return (
         <div className="grid grid-cols-3 gap-6 h-full">
             {/* LEFT COLUMN: Details & Members */}
             <div className="col-span-1 space-y-6">
                 
-                {/* Assignment Details */}
+                {/* Assignment Details (UPDATED) */}
                 <div className="bg-white p-6 rounded-xl shadow-lg">
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-xl font-semibold">Assignment Details: {group.assignmentTitle || 'Project Assignment'}</h3>
-                        {isAdmin && (
-                            <button 
-                                onClick={handleDeleteGroup}
-                                disabled={isDeleting}
-                                className="text-gray-400 hover:text-red-700 disabled:opacity-50"
-                            >
-                                <IoTrashBinOutline className="w-5 h-5" />
-                            </button>
-                        )}
+                    <div className="flex justify-between items-start mb-4">
+                        <h3 className="text-xl font-semibold break-words">Group: {group.name || 'Untitled Group'}</h3>
+                        <div className="flex space-x-2">
+                            {isAdmin && (
+                                <button 
+                                    onClick={handleOpenAssignmentModal}
+                                    title="Edit Assignment"
+                                    className="text-gray-400 hover:text-primary-500 p-1 rounded-full"
+                                >
+                                    <IoPencil className="w-5 h-5" />
+                                </button>
+                            )}
+                            {isAdmin && (
+                                <button 
+                                    onClick={handleDeleteGroup}
+                                    disabled={isDeleting}
+                                    title="Delete Group"
+                                    className="text-gray-400 hover:text-red-700 disabled:opacity-50"
+                                >
+                                    <IoTrashBinOutline className="w-5 h-5" />
+                                </button>
+                            )}
+                        </div>
                     </div>
                     
-                    {/* Placeholder Assignment Card */}
+                    {/* Dynamic Assignment Card */}
                     <div className="border border-gray-200 p-4 rounded-lg">
-                        <span className="text-xs font-semibold px-2 py-1 rounded-full bg-green-100 text-green-700">
-                            DESIGN SYSTEM
-                        </span>
-                        <h4 className="font-bold mt-2">Hero section</h4>
-                        <p className="text-sm text-gray-500 mb-4">Create a design system for a hero section in 2 different variants.</p>
+                        {/* Status Dropdown Interaction */}
+                        <select
+                            value={group.projectStatus || 'To do'}
+                            onChange={handleUpdateAssignmentStatus}
+                            disabled={!isAdmin}
+                            className={`text-sm font-semibold px-2 py-1 rounded-full text-white ${getStatusColor(group.projectStatus)} cursor-pointer`}
+                        >
+                            {STATUS_OPTIONS.map(status => (
+                                <option key={status} value={status} className="bg-white text-gray-800">{status}</option>
+                            ))}
+                        </select>
                         
-                        {/* if want add Status Dropdown */}
-           
-
+                        <h4 className="font-bold mt-2 break-words">{group.assignmentTitle || 'No Assignment Title Set'}</h4>
+                        <p className="text-sm text-gray-500 mb-2 break-words">{group.description || 'No description provided.'}</p>
+                        
+                        {/* Deadline Display */}
+                        <div className="text-xs font-medium mt-3">
+                            <span className="text-gray-700">Deadline: </span>
+                            <span className={isDeadlinePassed ? 'text-red-500 font-bold' : 'text-primary-500'}>
+                                {displayDeadline} {isDeadlinePassed && '(Missed)'}
+                            </span>
+                        </div>
                     </div>
                 </div>
 
-                {/* Group Members */}
+                {/* Group Members (Retained) */}
                 <div className="bg-white p-6 rounded-xl shadow-lg">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-xl font-semibold">Group Members ({group.members.length})</h3>
@@ -268,6 +358,7 @@ const GroupDetails = () => {
                             <button 
                                 onClick={() => setIsMemberModalOpen(true)}
                                 className="text-gray-400 hover:text-primary-500 p-1 rounded-full"
+                                title="Invite New Member"
                             >
                                 <IoAdd className="w-6 h-6" />
                             </button>
@@ -286,7 +377,7 @@ const GroupDetails = () => {
                 </div>
             </div>
 
-            {/* RIGHT COLUMN: Discussion Board */}
+            {/* RIGHT COLUMN: Discussion Board (Retained) */}
             <div className="col-span-2 flex flex-col space-y-6">
                 <div className="bg-white p-6 rounded-xl shadow-lg flex-grow flex flex-col">
                     <h3 className="text-xl font-semibold mb-4 border-b pb-2">Discussion</h3>
@@ -294,7 +385,7 @@ const GroupDetails = () => {
                     {/* Discussion List */}
                     <div className="flex-grow overflow-y-auto space-y-4 pr-3">
                         {group.discussions.length > 0 ? (
-                            group.discussions.map((disc, index) => (
+                            group.discussions.slice().reverse().map((disc, index) => ( // Reverse order for latest first
                                 <DiscussionCard key={index} discussion={disc} />
                             ))
                         ) : (
@@ -312,26 +403,39 @@ const GroupDetails = () => {
                             className="flex-grow border border-gray-300 rounded-full py-2 px-4 focus:ring-primary-500 focus:border-primary-500"
                             disabled={!currentUserId}
                         />
-                        <button type="submit" className="p-3 bg-primary-500 text-white rounded-full hover:bg-primary-600 transition-colors">
-                            <IoSend className="w-5 h-5 transform rotate-45" />
+                        <button 
+                            type="submit" 
+                            disabled={!currentUserId || !newComment.trim()}
+                            className="p-3 bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors"
+                        >
+                            <IoSend className="w-5 h-5 transform" />
                         </button>
                     </form>
                 </div>
             </div>
             
-            {/* ADD MEMBER MODAL */}
+            {/* ADD MEMBER MODAL (Retained) */}
             <Modal 
                 isOpen={isMemberModalOpen} 
                 title="Invite Member" 
                 onClose={() => setIsMemberModalOpen(false)}
                 footer={
-                    <button 
-                        onClick={handleAddMember} 
-                        disabled={isInviting || !newMemberEmail}
-                        className="px-4 py-2 text-white bg-primary-500 rounded-lg hover:bg-primary-600 disabled:bg-gray-400"
-                    >
-                        {isInviting ? 'Inviting...' : 'Send Invitation'}
-                    </button>
+                    <>
+                        <button 
+                            onClick={() => setIsMemberModalOpen(false)} 
+                            type="button"
+                            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                        >
+                            Cancel
+                        </button>
+                        <button 
+                            onClick={handleAddMember} 
+                            disabled={isInviting || !newMemberEmail}
+                            className="px-4 py-2 text-white bg-primary-500 rounded-lg hover:bg-primary-600 disabled:bg-gray-400"
+                        >
+                            {isInviting ? 'Inviting...' : 'Send Invitation'}
+                        </button>
+                    </>
                 }
             >
                 <form onSubmit={handleAddMember}>
@@ -345,6 +449,53 @@ const GroupDetails = () => {
                         required
                     />
                     <p className="text-xs text-gray-500 mt-2">The user must already have an account to be added.</p>
+                </form>
+            </Modal>
+
+            {/* NEW: ASSIGNMENT MODAL (Add/Edit Title and Deadline) */}
+            <Modal
+                isOpen={isAssignmentModalOpen}
+                title={group.assignmentTitle ? "Edit Assignment Details" : "Set Group Assignment"}
+                onClose={() => setIsAssignmentModalOpen(false)}
+                footer={
+                    <>
+                        <button
+                            onClick={() => setIsAssignmentModalOpen(false)}
+                            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleAssignmentSubmit}
+                            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                        >
+                            Save Details
+                        </button>
+                    </>
+                }
+            >
+                <form onSubmit={handleAssignmentSubmit}>
+                    <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Assignment Title</label>
+                        <input
+                            type="text"
+                            value={editingAssignment.assignmentTitle}
+                            onChange={(e) => setEditingAssignment({ ...editingAssignment, assignmentTitle: e.target.value })}
+                            className="w-full border border-gray-300 rounded-lg p-2 focus:ring-primary-500 focus:border-primary-500"
+                            placeholder="e.g., Final Project: Design System"
+                            required
+                        />
+                    </div>
+                    <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Deadline (Optional)</label>
+                        <input
+                            type="date"
+                            value={editingAssignment.deadline}
+                            onChange={(e) => setEditingAssignment({ ...editingAssignment, deadline: e.target.value })}
+                            className="w-full border border-gray-300 rounded-lg p-2 focus:ring-primary-500 focus:border-primary-500"
+                        />
+                    </div>
+                    <p className="text-xs text-red-500">Note: The project description is currently shared with the Group Description.</p>
                 </form>
             </Modal>
         </div>

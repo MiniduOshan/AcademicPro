@@ -1,3 +1,5 @@
+// models/Group.js
+
 import mongoose from 'mongoose';
 
 const discussionSchema = mongoose.Schema(
@@ -15,6 +17,9 @@ const discussionSchema = mongoose.Schema(
     },
     {
         timestamps: true,
+        // When using timestamps: true on a subdocument, Mongoose adds createdAt/updatedAt.
+        // If you prefer 'createdAt' to be accessible directly on the subdocument:
+        // By default, it will be added. 
     }
 );
 
@@ -42,11 +47,32 @@ const GroupSchema = mongoose.Schema(
                 ref: 'User',
             },
         ],
+        
+        // ===================================
+        // === NEW ASSIGNMENT FIELDS START ===
+        // ===================================
+        assignmentTitle: { // Updated by PUT /api/groups/:id
+            type: String,
+            default: '',
+        },
+        deadline: { // Updated by PUT /api/groups/:id
+            type: Date,
+            default: null,
+        },
+        projectStatus: { // Updated by PUT /api/groups/:id/assignment/status
+            type: String,
+            enum: ['To do', 'In progress', 'Done'],
+            default: 'To do',
+        },
+        // ===================================
+        // === NEW ASSIGNMENT FIELDS END ===
+        // ===================================
+        
         // Array of discussion items (comments)
         discussions: [discussionSchema],
     },
     {
-        timestamps: true,
+        timestamps: true, // Adds createdAt and updatedAt to the main Group document
     }
 );
 

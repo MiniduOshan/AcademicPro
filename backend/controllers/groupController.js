@@ -1,197 +1,238 @@
-import Group from '../models/Group.js';
-import mongoose from 'mongoose';
+// controllers/groupController.js
 
-// @desc    Get single group details by ID
-// @route   GET /api/groups/:id
-// @access  Private
-const getGroup = async (req, res) => {
-    try {
-        const group = await Group.findById(req.params.id)
-            .populate('admin', 'firstName lastName email')
-            .populate('members', 'firstName lastName email') 
-            .populate('discussions.user', 'firstName lastName'); 
+import asyncHandler from 'express-async-handler';
+import Group from '../models/Group.js'; // Requires models/Group.js
+import User from '../models/User.js'; // Assumed User model import
 
-        if (!group) {
-            return res.status(404).json({ message: 'Group not found.' });
-        }
-
-        const isMember = group.members.some(member => member._id.toString() === req.user._id.toString());
-        
-        if (!isMember) {
-            return res.status(403).json({ message: 'Not authorized to view this group.' });
-        }
-
-        res.json(group);
-    } catch (error) {
-        if (error.kind === 'ObjectId') {
-             return res.status(404).json({ message: 'Invalid group ID format.' });
-        }
-        res.status(500).json({ message: error.message });
-    }
+// Helper to check if the user is the admin
+const checkAdmin = (group, req) => {
+    // Handles both populated admin objects and simple IDs
+    const adminId = group.admin?._id ? group.admin._id.toString() : group.admin.toString();
+    return adminId === req.user._id.toString();
 };
+
+/* ---------------------- GROUP CRUD ---------------------- */
 
 // @desc    Create a new group
 // @route   POST /api/groups
 // @access  Private
-const createGroup = async (req, res) => {
+const createGroup = asyncHandler(async (req, res) => {
     const { name, description } = req.body;
-    if (!name) return res.status(400).json({ message: 'Group name is required' });
 
-    try {
-        const groupExists = await Group.findOne({ name });
-        if (groupExists) return res.status(400).json({ message: 'A group with this name already exists' });
+    const group = await Group.create({
+        name,
+        description,
+        admin: req.user._id,
+        members: [req.user._id], // Admin is automatically a member
+    });
 
-        const group = await Group.create({
-            name,
-            description,
-            admin: req.user._id,
-            members: [req.user._id], 
-        });
+    res.status(201).json(group);
+});
 
-        res.status(201).json(group);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// @desc    Get all groups where the user is a member
+// @desc    Get all groups the user is a member of
 // @route   GET /api/groups
 // @access  Private
-const getGroups = async (req, res) => {
-    try {
-        const groups = await Group.find({ members: req.user._id })
-            .populate('admin', 'firstName lastName')
-            .populate('members', 'firstName lastName');
-        
-        res.json(groups);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+const getGroups = asyncHandler(async (req, res) => {
+    const groups = await Group.find({ members: req.user._id })
+        .populate('admin', 'firstName email')
+        .sort({ createdAt: -1 });
+
+    res.json(groups);
+});
+
+// @desc    Get a group by ID
+// @route   GET /api/groups/:id
+// @access  Private
+const getGroupById = asyncHandler(async (req, res) => {
+    // Populate members and discussions.user for frontend display
+    const group = await Group.findById(req.params.id)
+        .populate('admin', 'firstName email')
+        .populate('members', 'firstName email')
+        .populate('discussions.user', 'firstName email');
+
+    if (group && group.members.map(m => m._id.toString()).includes(req.user._id.toString())) {
+        res.json(group);
+    } else if (group) {
+        res.status(403).json({ message: 'Not authorized to view this group' });
+    } else {
+        res.status(404).json({ message: 'Group not found' });
     }
-};
+});
 
 // @desc    Delete a group
 // @route   DELETE /api/groups/:id
-// @access  Private (Admin Only)
-const deleteGroup = async (req, res) => {
-    try {
-        const group = await Group.findById(req.params.id);
-        if (!group) return res.status(404).json({ message: 'Group not found' });
-        if (group.admin.toString() !== req.user._id.toString()) return res.status(401).json({ message: 'Only the group admin can delete the group' });
+// @access  Private/Admin
+const deleteGroup = asyncHandler(async (req, res) => {
+    const group = await Group.findById(req.params.id);
+
+    if (group) {
+        if (!checkAdmin(group, req)) {
+            res.status(403).json({ message: 'Only the admin can delete the group' });
+            return;
+        }
 
         await Group.deleteOne({ _id: req.params.id });
-        res.json({ message: 'Group removed successfully' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.json({ message: 'Group removed' });
+    } else {
+        res.status(404).json({ message: 'Group not found' });
     }
-};
+});
+
+/* ------------------- ASSIGNMENT & GROUP DETAILS ------------------- */
+
+// @desc    Update group details (assignmentTitle, deadline, description)
+// @route   PUT /api/groups/:id
+// @access  Private/Admin
+const updateGroupDetails = asyncHandler(async (req, res) => {
+    const { assignmentTitle, deadline, description } = req.body;
+    const group = await Group.findById(req.params.id);
+
+    if (group) {
+        if (!checkAdmin(group, req)) {
+            res.status(403).json({ message: 'Only the admin can update assignment details' });
+            return;
+        }
+
+        // Apply updates
+        if (assignmentTitle !== undefined) group.assignmentTitle = assignmentTitle;
+        if (deadline !== undefined) group.deadline = deadline;
+        if (description !== undefined) group.description = description;
+        
+        const updatedGroup = await group.save();
+        res.json({
+            _id: updatedGroup._id,
+            assignmentTitle: updatedGroup.assignmentTitle,
+            deadline: updatedGroup.deadline,
+            description: updatedGroup.description,
+            // Include other necessary fields for the frontend update
+        });
+
+    } else {
+        res.status(404).json({ message: 'Group not found' });
+    }
+});
+
+
+// @desc    Update assignment status
+// @route   PUT /api/groups/:id/assignment/status
+// @access  Private/Admin
+const updateAssignmentStatus = asyncHandler(async (req, res) => {
+    const { assignmentStatus } = req.body;
+    const group = await Group.findById(req.params.id);
+
+    if (group) {
+        if (!checkAdmin(group, req)) {
+            res.status(403).json({ message: 'Only the admin can change the assignment status' });
+            return;
+        }
+
+        group.projectStatus = assignmentStatus;
+        await group.save();
+
+        res.json({ message: 'Status updated', projectStatus: group.projectStatus });
+    } else {
+        res.status(404).json({ message: 'Group not found' });
+    }
+});
+
+/* ---------------------- MEMBERS ---------------------- */
 
 // @desc    Add a member to a group
 // @route   POST /api/groups/:id/members
-// @access  Private (Admin Only)
-const addMember = async (req, res) => {
+// @access  Private/Admin
+const addMember = asyncHandler(async (req, res) => {
     const { memberId } = req.body;
-    if (!memberId || !mongoose.Types.ObjectId.isValid(memberId)) return res.status(400).json({ message: 'Valid memberId is required' });
+    const group = await Group.findById(req.params.id);
 
-    try {
-        const group = await Group.findById(req.params.id);
-        if (!group) return res.status(404).json({ message: 'Group not found' });
-        if (group.admin.toString() !== req.user._id.toString()) return res.status(401).json({ message: 'Only the group admin can add members' });
-        if (group.members.includes(memberId)) return res.status(400).json({ message: 'User is already a member' });
+    if (group) {
+        if (!checkAdmin(group, req)) {
+            res.status(403).json({ message: 'Only the admin can add members' });
+            return;
+        }
+        
+        if (group.members.map(m => m.toString()).includes(memberId)) {
+            res.status(400).json({ message: 'User is already a member' });
+            return;
+        }
 
         group.members.push(memberId);
         await group.save();
-        res.json({ message: 'Member added successfully', group });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+
+        const newMember = await User.findById(memberId, 'firstName email');
+        res.json(newMember);
+
+    } else {
+        res.status(404).json({ message: 'Group not found' });
     }
-};
+});
 
 // @desc    Remove a member from a group
 // @route   DELETE /api/groups/:id/members
-// @access  Private (Admin Only)
-const removeMember = async (req, res) => {
-    const { memberId } = req.body; 
-    if (!memberId || !mongoose.Types.ObjectId.isValid(memberId)) return res.status(400).json({ message: 'Valid memberId is required' });
+// @access  Private/Admin
+const removeMember = asyncHandler(async (req, res) => {
+    const { memberId } = req.body;
+    const group = await Group.findById(req.params.id);
 
-    try {
-        const group = await Group.findById(req.params.id);
-        if (!group) return res.status(404).json({ message: 'Group not found' });
-        if (group.admin.toString() !== req.user._id.toString()) return res.status(401).json({ message: 'Only the group admin can remove members' });
-        if (group.admin.toString() === memberId) return res.status(400).json({ message: 'Admin cannot remove themselves.' });
+    if (group) {
+        if (!checkAdmin(group, req)) {
+            res.status(403).json({ message: 'Only the admin can remove members' });
+            return;
+        }
+        
+        if (group.admin.toString() === memberId) {
+            res.status(400).json({ message: 'Admin cannot be removed' });
+            return;
+        }
 
-        group.members = group.members.filter((member) => member.toString() !== memberId.toString());
+        group.members = group.members.filter(m => m.toString() !== memberId);
         await group.save();
-        res.json({ message: 'Member removed successfully', group });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
 
-// @desc    Add a discussion (comment) to a group
+        res.json({ message: 'Member removed successfully' });
+    } else {
+        res.status(404).json({ message: 'Group not found' });
+    }
+});
+
+/* ---------------------- DISCUSSION ---------------------- */
+
+// @desc    Add a discussion post to a group
 // @route   POST /api/groups/:id/discuss
-// @access  Private (Members Only)
-const addDiscussion = async (req, res) => {
+// @access  Private
+const addDiscussion = asyncHandler(async (req, res) => {
     const { text } = req.body;
-    if (!text) return res.status(400).json({ message: 'Discussion text cannot be empty' });
+    const group = await Group.findById(req.params.id);
 
-    try {
-        const group = await Group.findById(req.params.id);
-        if (!group) return res.status(404).json({ message: 'Group not found' });
-        if (!group.members.includes(req.user._id)) return res.status(403).json({ message: 'You must be a member to discuss' });
+    if (group) {
+        if (!group.members.map(m => m.toString()).includes(req.user._id.toString())) {
+            res.status(403).json({ message: 'You are not a member of this group' });
+            return;
+        }
+        
+        const discussion = {
+            user: req.user._id,
+            text,
+        };
 
-        const newDiscussion = { text, user: req.user._id };
-        group.discussions.push(newDiscussion);
+        group.discussions.push(discussion);
         await group.save();
-
-        const updatedGroup = await Group.findById(req.params.id).populate('discussions.user', 'firstName lastName');
-        res.status(201).json(updatedGroup.discussions[updatedGroup.discussions.length - 1]);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// @desc    Update a specific group's main assignment status
-// @route   PUT /api/groups/:id/assignment/status
-// @access  Private (Member Only)
-const updateAssignmentStatus = async (req, res) => {
-    const { assignmentStatus } = req.body;
-    const groupId = req.params.id;
-
-    if (!assignmentStatus) {
-        return res.status(400).json({ message: 'Assignment status is required.' });
-    }
-
-    try {
-        const group = await Group.findById(groupId);
-        if (!group) {
-            return res.status(404).json({ message: 'Group not found.' });
-        }
-
-        const isMember = group.members.some(memberId => memberId.toString() === req.user._id.toString());
-        if (!isMember) {
-            return res.status(403).json({ message: 'Not authorized to change status.' });
-        }
         
-        // ASSUMPTION: Group model has a 'projectStatus' field (needs to be added to models/Group.js)
-        group.projectStatus = assignmentStatus; 
-        const updatedGroup = await group.save();
+        // Return the new discussion object (last element)
+        res.status(201).json(group.discussions[group.discussions.length - 1]);
 
-        res.json({ message: 'Assignment status updated.', projectStatus: updatedGroup.projectStatus });
-        
-    } catch (error) {
-        console.error(`[GROUP UPDATE STATUS ERROR]`, error);
-        res.status(500).json({ message: error.message });
+    } else {
+        res.status(404).json({ message: 'Group not found' });
     }
-};
+});
 
 
-export default { 
+export {
     createGroup, 
     getGroups, 
-    getGroup, 
-    deleteGroup, 
-    addMember, 
-    removeMember, 
+    getGroupById, 
+    deleteGroup,
+    updateGroupDetails, 
+    updateAssignmentStatus, 
+    addMember,
+    removeMember,
     addDiscussion,
-    updateAssignmentStatus // <--- NEWLY ADDED EXPORT
 };
