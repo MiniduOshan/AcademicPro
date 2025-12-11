@@ -4,14 +4,13 @@ import React from 'react';
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 
 // Import Header, Footer, and Page components
-import Header from './components/Header.jsx'; 
-import Footer from './components/Footer.jsx'; 
+import Header from './components/header.jsx';
+import Footer from './components/footer.jsx';
+import About from './pages/about.jsx';
+import Contact from './pages/contact.jsx';
 
 import LandingPage from './pages/LandingPage.jsx';
 import Auth from './pages/Auth.jsx';
-// Placeholder Pages 
-import About from './pages/About.jsx';
-import Contact from './pages/Contact.jsx';
 
 import DashboardLayout from './pages/Dashboard.jsx';
 import DashboardSummary from './pages/DashboardSummary.jsx';
