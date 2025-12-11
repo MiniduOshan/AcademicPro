@@ -1,22 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { IoEllipsisHorizontal, IoAdd, IoTrashBinOutline } from 'react-icons/io5';
-import Modal from '../components/Modal.jsx'; // Import the new Modal component
+import Modal from '../components/Modal.jsx'; 
 
-const BASE_URL = 'http://localhost:5000'; 
+// Use the VITE environment variable for dynamic host switching
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'; 
 const STATUS_OPTIONS = ['To do', 'In progress', 'Done'];
 
 
-// --- TaskCard Component (Enhanced) ---
+// --- TaskCard Component (Retained) ---
 const TaskCard = ({ task, onStatusChange, onDelete }) => {
-    
+    // ... (TaskCard component logic remains the same) ...
     const getTagColor = (tag) => {
         if (tag === 'DESIGN SYSTEM') return 'bg-green-100 text-green-700';
         if (tag === 'DEVELOPMENT') return 'bg-red-100 text-red-700';
         return 'bg-blue-100 text-blue-700';
     };
     
-    // Fallback for avatar initials
     const initials = task.title ? task.title.split(' ').map(n => n[0]).join('').toUpperCase() : '??';
 
     return (
@@ -26,7 +26,6 @@ const TaskCard = ({ task, onStatusChange, onDelete }) => {
                     {task.tags && task.tags.length > 0 ? task.tags[0] : 'TASK'}
                 </span>
                 
-                {/* Dropdown for Status Change */}
                 <select
                     value={task.status || 'To do'}
                     onChange={(e) => onStatusChange(task._id, e.target.value)}
@@ -43,13 +42,11 @@ const TaskCard = ({ task, onStatusChange, onDelete }) => {
             
             <div className="flex justify-between items-center">
                 <div className="flex space-x-1">
-                    {/* Placeholder Avatars */}
                     <div className="w-6 h-6 rounded-full bg-primary-500 text-white text-xs font-bold flex items-center justify-center">
                         {initials.slice(0, 2)}
                     </div>
                 </div>
                 
-                {/* Delete Button */}
                 <button 
                     onClick={() => onDelete(task._id)}
                     className="text-red-400 hover:text-red-600 transition-colors p-1 rounded-full hover:bg-red-50"
@@ -62,26 +59,30 @@ const TaskCard = ({ task, onStatusChange, onDelete }) => {
     );
 };
 
-// --- TaskColumn Component (Enhanced) ---
+// --- TaskColumn Component (FIXED) ---
 const TaskColumn = ({ title, tasks, onStatusChange, onOpenModal, onDelete }) => (
     <div className="w-full md:w-1/3 p-2 flex flex-col bg-gray-50 rounded-lg shadow-inner">
         <div className="flex justify-between items-center mb-4 p-2 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-800">{title} ({tasks.length})</h2>
             <div className="flex space-x-2">
-                <button 
-                    onClick={() => onOpenModal(title)}
-                    className="text-gray-400 hover:text-primary-500 p-1 rounded-full hover:bg-gray-200 transition-colors"
-                    title={`Add task to ${title}`}
-                >
-                    <IoAdd className="w-5 h-5" />
-                </button>
+                
+                {/* FIX: Conditionally render the IoAdd button only for the "To do" column */}
+                {title === 'To do' && (
+                    <button 
+                        onClick={() => onOpenModal(title)}
+                        className="text-gray-400 hover:text-primary-500 p-1 rounded-full hover:bg-gray-200 transition-colors"
+                        title={`Add task to ${title}`}
+                    >
+                        <IoAdd className="w-5 h-5" />
+                    </button>
+                )}
+                
                 <button className="text-gray-400 hover:text-primary-500 p-1 rounded-full hover:bg-gray-200 transition-colors">
                     <IoEllipsisHorizontal className="w-5 h-5" />
                 </button>
             </div>
         </div>
         
-        {/* Scrollable Task List */}
         <div className="flex-grow overflow-y-auto pr-2" style={{ maxHeight: 'calc(100vh - 180px)' }}>
             {tasks.map((task) => (
                 <TaskCard 
@@ -95,7 +96,7 @@ const TaskColumn = ({ title, tasks, onStatusChange, onOpenModal, onDelete }) => 
     </div>
 );
 
-// --- List Component (Main Logic) ---
+// --- List Component (Main Logic - Retained) ---
 const List = () => {
     const [notes, setNotes] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -104,7 +105,7 @@ const List = () => {
     const [newNote, setNewNote] = useState({
         title: '',
         content: '',
-        status: 'To do', // Default status for new notes
+        status: 'To do', 
     });
 
     const token = localStorage.getItem('token');
@@ -123,7 +124,7 @@ const List = () => {
         }
         try {
             setLoading(true);
-            const { data } = await axios.get(`${BASE_URL}/api/notes`, config);
+            const { data } = await axios.get(`${API_BASE_URL}/api/notes`, config);
             setNotes(data);
             setError(null);
         } catch (err) {
@@ -140,7 +141,7 @@ const List = () => {
     
     // --- MODAL HANDLERS ---
     const handleOpenModal = (initialStatus) => {
-        setNewNote({ title: '', content: '', status: initialStatus });
+        setNewNote({ title: '', content: '', status: initialStatus }); 
         setIsModalOpen(true);
     };
 
@@ -152,15 +153,19 @@ const List = () => {
 
     // --- ADD NOTE ---
     const handleAddSubmit = async (e) => {
-        e.preventDefault();
+        if (e && e.preventDefault) {
+            e.preventDefault();
+        }
         
-        if (!newNote.title || !newNote.content) {
+        const finalNoteData = newNote;
+        
+        if (!finalNoteData.title || !finalNoteData.content) {
             alert("Title and content are required.");
             return;
         }
 
         try {
-            const { data: createdNote } = await axios.post(`${BASE_URL}/api/notes`, newNote, config);
+            const { data: createdNote } = await axios.post(`${API_BASE_URL}/api/notes`, finalNoteData, config); 
             
             setNotes([...notes, createdNote]);
             handleCloseModal();
@@ -174,9 +179,8 @@ const List = () => {
         if (!window.confirm("Are you sure you want to delete this task?")) return;
 
         try {
-            await axios.delete(`${BASE_URL}/api/notes/${id}`, config);
+            await axios.delete(`${API_BASE_URL}/api/notes/${id}`, config);
             
-            // Remove the note from local state
             setNotes(notes.filter(note => note._id !== id));
         } catch (err) {
             alert("Failed to delete task: " + (err.response?.data?.message || err.message));
@@ -185,18 +189,14 @@ const List = () => {
 
     // --- CHANGE STATUS (MOVE TASK) ---
     const handleStatusChange = async (id, newStatus) => {
-        // Optimistic UI update for immediate visual feedback
         setNotes(notes.map(note => 
             note._id === id ? { ...note, status: newStatus } : note
         ));
 
         try {
-            // Update backend with the new status
-            await axios.put(`${BASE_URL}/api/notes/${id}`, { status: newStatus }, config);
-            
+            await axios.put(`${API_BASE_URL}/api/notes/${id}`, { status: newStatus }, config);
         } catch (err) {
             alert("Failed to update status. Please reload: " + (err.response?.data?.message || err.message));
-            // Revert state if the API call fails
             fetchNotes(); 
         }
     };
@@ -226,7 +226,7 @@ const List = () => {
                 ))}
             </div>
 
-            {/* --- ADD TASK MODAL --- */}
+            {/* --- ADD TASK MODAL (Retained) --- */}
             <Modal 
                 isOpen={isModalOpen} 
                 title={`Add Task to "${newNote.status}"`} 
@@ -243,14 +243,14 @@ const List = () => {
                         <button 
                             onClick={handleAddSubmit} 
                             type="submit"
-                            className="px-4 py-2 text-black bg-primary-500 rounded-lg hover:bg-primary-600"
+                            className="px-4 py-2 text-gray-700  bg-gray-100 rounded-lg  hover:bg-gray-200"
                         >
                             Create Task
                         </button>
                     </>
                 }
             >
-                <form onSubmit={handleAddSubmit}>
+                <form onSubmit={handleAddSubmit}> 
                     <div className="mb-4">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
                         <input
@@ -273,11 +273,11 @@ const List = () => {
                             required
                         ></textarea>
                     </div>
-                    <div className="mb-4">
+                    {/* <div className="mb-4">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                         <select
                             name="status"
-                            value={newNote.status}
+                            value={newNote.status} 
                             onChange={handleModalChange}
                             className="w-full border border-gray-300 rounded-lg p-2 focus:ring-primary-500 focus:border-primary-500"
                         >
@@ -285,7 +285,7 @@ const List = () => {
                                 <option key={status} value={status}>{status}</option>
                             ))}
                         </select>
-                    </div>
+                    </div> */}
                 </form>
             </Modal>
         </>

@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { IoSearchOutline, IoChevronDown, IoTrashBinOutline } from 'react-icons/io5';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Modal from '../components/Modal.jsx';
 
-const BASE_URL = 'http://localhost:5000'; 
+// DEPLOYMENT READY: Uses VITE environment variable for dynamic host switching
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'; 
 const STATUS_OPTIONS = ['In progress', 'Done']; 
 
 // --- GroupCard Component (Retained) ---
 const GroupCard = ({ group, onViewGroup, onDeleteGroup }) => {
-    // Determine if the current user is the admin (simplified based on your User model)
+    // Determine if the current user is the admin
     const currentUserId = localStorage.getItem('token') ? JSON.parse(atob(localStorage.getItem('token').split('.')[1])).id : '';
     const isAdmin = group.admin === currentUserId;
 
@@ -53,7 +54,6 @@ const GroupCard = ({ group, onViewGroup, onDeleteGroup }) => {
                     >
                         View Group
                     </button>
-                    {/* Status Placeholder */}
                     <button className={`flex items-center space-x-1 px-3 py-1 text-sm font-medium rounded-lg text-white bg-green-500 hover:bg-green-600 transition-colors`}>
                         <span>{group.status || 'Active'}</span>
                         <IoChevronDown className="w-4 h-4" />
@@ -64,12 +64,14 @@ const GroupCard = ({ group, onViewGroup, onDeleteGroup }) => {
     );
 };
 
-// --- MyGroups Component (Main Logic) ---
+// --- MyGroups Component (Main Logic - FIXED) ---
 const MyGroups = () => {
     const [groups, setGroups] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [newGroup, setNewGroup] = useState({ name: '', description: '' });
+    const [searchTerm, setSearchTerm] = useState(''); 
+    const [sortBy, setSortBy] = useState('Latest'); 
     const navigate = useNavigate();
 
     const token = localStorage.getItem('token');
@@ -85,10 +87,16 @@ const MyGroups = () => {
 
         try {
             setLoading(true);
-            const { data } = await axios.get(`${BASE_URL}/api/groups`, config);
+            const { data } = await axios.get(`${API_BASE_URL}/api/groups`, config);
             setGroups(data);
         } catch (err) {
             console.error("Failed to fetch groups:", err);
+            // Redirect or alert on auth failure
+            if (err.response?.status === 401 || err.response?.status === 403) {
+                alert("Session expired. Please log in again.");
+                localStorage.removeItem('token');
+                navigate('/login');
+            }
             alert("Failed to load groups: " + (err.response?.data?.message || err.message));
         } finally {
             setLoading(false);
@@ -98,23 +106,51 @@ const MyGroups = () => {
     useEffect(() => {
         fetchGroups();
     }, [token]);
+    
+    // FIX: Implement the actual filtering and sorting logic
+    const filteredGroups = useMemo(() => {
+        let currentGroups = [...groups]; // Create a mutable copy for sorting/filtering
+        
+        // 1. Filtering
+        if (searchTerm) {
+            const lowerCaseSearch = searchTerm.toLowerCase();
+            currentGroups = currentGroups.filter(group => 
+                group.name.toLowerCase().includes(lowerCaseSearch) ||
+                group.description.toLowerCase().includes(lowerCaseSearch)
+            );
+        }
+        
+        // 2. Sorting Logic
+        if (sortBy === 'Name') {
+            // Sort alphabetically by name
+            currentGroups.sort((a, b) => a.name.localeCompare(b.name));
+        } else if (sortBy === 'Latest') {
+            // Sort by creation date (latest first). Assumes 'createdAt' timestamp exists.
+            currentGroups.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        }
+        // If sorting needs to be by 'Oldest', use a.createdAt - b.createdAt
 
-    // --- CREATE GROUP FIX ---
+        return currentGroups;
+
+    }, [groups, searchTerm, sortBy]);
+
+
+    // --- CREATE GROUP (Retained) ---
     const handleCreateSubmit = async (e) => {
         e.preventDefault();
         if (!newGroup.name) return;
 
         try {
-            const { data: createdGroup } = await axios.post(`${BASE_URL}/api/groups`, newGroup, config);
+            const { data: createdGroup } = await axios.post(`${API_BASE_URL}/api/groups`, newGroup, config);
             
-            // 1. Update local state
-            setGroups([...groups, createdGroup]);
+            // Re-fetch to ensure the new group appears correctly with a timestamp, 
+            // or manually add and sort (Manual add is faster for UX, but sorting requires a correct timestamp)
+            // For now, manual add:
+            setGroups(prevGroups => [...prevGroups, createdGroup]); 
             
-            // 2. Close modal
             setIsCreateModalOpen(false);
             setNewGroup({ name: '', description: '' });
 
-            // 3. CRITICAL FIX: Navigate to the newly created group's detail page
             navigate(`/dashboard/my-groups/${createdGroup._id}`);
             
         } catch (err) {
@@ -127,7 +163,7 @@ const MyGroups = () => {
         if (!window.confirm("Are you sure you want to delete this group? This action cannot be undone.")) return;
 
         try {
-            await axios.delete(`${BASE_URL}/api/groups/${id}`, config);
+            await axios.delete(`${API_BASE_URL}/api/groups/${id}`, config);
             setGroups(groups.filter(group => group._id !== id));
         } catch (err) {
             alert("Failed to delete group: " + (err.response?.data?.message || err.message));
@@ -150,13 +186,19 @@ const MyGroups = () => {
                             <IoSearchOutline className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                             <input
                                 type="text"
-                                placeholder="Search"
+                                placeholder="Search groups by name or description"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full py-2 pl-10 pr-4 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
                             />
                         </div>
-                        <select className="py-2 px-4 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500">
-                            <option>Sort by: Latest</option>
-                            <option>Sort by: Name</option>
+                        <select 
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value)}
+                            className="py-2 px-4 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
+                        >
+                            <option value="Latest">Sort by: Latest</option>
+                            <option value="Name">Sort by: Name</option>
                         </select>
                     </div>
                     <button 
@@ -168,8 +210,8 @@ const MyGroups = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {groups.length > 0 ? (
-                        groups.map((group) => (
+                    {filteredGroups.length > 0 ? (
+                        filteredGroups.map((group) => (
                             <GroupCard 
                                 key={group._id} 
                                 group={group} 
@@ -178,12 +220,14 @@ const MyGroups = () => {
                             />
                         ))
                     ) : (
-                        <p className="text-gray-500 col-span-3 text-center p-10 border rounded-lg bg-white">You are not a member of any groups yet. Create one!</p>
+                        <p className="text-gray-500 col-span-3 text-center p-10 border rounded-lg bg-white">
+                            {searchTerm ? `No groups found matching "${searchTerm}".` : 'You are not a member of any groups yet. Create one!'}
+                        </p>
                     )}
                 </div>
             </div>
 
-            {/* --- CREATE GROUP MODAL --- */}
+            {/* --- CREATE GROUP MODAL (Retained) --- */}
             <Modal 
                 isOpen={isCreateModalOpen} 
                 title="Create New Group" 

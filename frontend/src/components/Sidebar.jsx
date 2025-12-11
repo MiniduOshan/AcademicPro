@@ -24,7 +24,7 @@ const Sidebar = () => {
     );
     
     return (
-        <div className="flex flex-col h-screen w-64 bg-white border-r border-gray-200 p-4 z-10">
+        <div className="flex flex-col h-screen w-64 bg-gray-300 border-r border-gray-200 p-4 z-10">
             {/* Logo */}
             <div className="flex items-center space-x-2 pb-8 border-b border-gray-100">
                 <img src="/AcademicPro_Logo.svg" alt="AcademicPro Logo" className="w-8 h-8" /> 
