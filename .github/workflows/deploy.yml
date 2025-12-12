@@ -1,0 +1,63 @@
+name: MERN Deployment to Azure VM
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🚀 Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM_IP_ADDRESS }}
+          username: ${{ secrets.VM_USERNAME }}
+          key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+
+            # 0. Ensure Node.js and PM2 exist
+            if ! command -v node >/dev/null 2>&1; then
+              echo "Node.js not found. Please install Node.js >= 18 on the VM."
+              exit 1
+            fi
+            if ! command -v pm2 >/dev/null 2>&1; then
+              echo "PM2 not found. Installing globally..."
+              sudo npm i -g pm2
+            fi
+
+            # 1. Navigate to the app directory (ensure repo is already cloned on VM)
+            cd ~/AcademicPro
+
+            # 2. Pull the latest code
+            git pull origin main
+
+            # 3. Setup Backend
+            echo "Updating Backend..."
+            cd backend
+            npm ci || npm install
+            # Restart backend using PM2
+            pm2 restart academic-backend || pm2 start server.js --name "academic-backend" --update-env
+            
+            # 4. Setup Frontend
+            echo "Updating Frontend..."
+            cd ../frontend
+            npm ci || npm install
+            npm run build
+            
+            # 5. Move build files to Nginx web root (if applicable)
+            if [ -d dist ]; then
+              sudo mkdir -p /var/www/html
+              sudo rm -rf /var/www/html/*
+              sudo cp -r dist/* /var/www/html/
+              sudo chown -R www-data:www-data /var/www/html || true
+              sudo systemctl reload nginx || true
+            fi
+            
+            echo "✅ Deployment Successful"

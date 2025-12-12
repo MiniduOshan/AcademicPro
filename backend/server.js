@@ -19,7 +19,8 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors());
+const corsOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map(s => s.trim()) : undefined;
+app.use(cors({ origin: corsOrigins || true }));
 app.use(express.json()); // For parsing application/json
 
 // Basic route for testing

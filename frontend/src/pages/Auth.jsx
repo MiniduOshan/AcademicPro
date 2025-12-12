@@ -65,7 +65,8 @@ const Auth = ({ type }) => {
       return;
     }
 
-    const endpoint = isLogin ? '/api/users/login' : '/api/users/signup';
+    // Use axios instance baseURL; do not prefix with '/api' again
+    const endpoint = isLogin ? 'users/login' : 'users/signup';
 
     try {
       const { data } = await api.post(endpoint, formData);
