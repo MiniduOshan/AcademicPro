@@ -12,14 +12,14 @@ import Contact from './pages/contact.jsx';
 import LandingPage from './pages/LandingPage.jsx';
 import Auth from './pages/Auth.jsx';
 
-import DashboardLayout from './pages/Dashboard.jsx';
-import DashboardSummary from './pages/DashboardSummary.jsx';
-import List from './pages/List.jsx';
-import MyGroups from './pages/MyGroups.jsx';
-import GroupDetails from './pages/GroupDetails.jsx';
-import Courses from './pages/Courses.jsx';
-import Profile from './pages/Profile.jsx';
-import CourseDetails from './pages/CourseDetails.jsx';
+import DashboardLayout from './dashboard/Dashboard.jsx';
+import DashboardSummary from './dashboard/DashboardSummary.jsx';
+import List from './dashboard/List.jsx';
+import MyGroups from './dashboard/MyGroups.jsx';
+import GroupDetails from './dashboard/GroupDetails.jsx';
+import Courses from './dashboard/Courses.jsx';
+import Profile from './dashboard/Profile.jsx';
+import CourseDetails from './dashboard/CourseDetails.jsx';
 
 
 // Simple Auth Check Simulation
