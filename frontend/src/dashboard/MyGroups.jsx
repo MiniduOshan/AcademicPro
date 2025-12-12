@@ -86,7 +86,7 @@ const MyGroups = () => {
 
         try {
             setLoading(true);
-            const { data } = await api.get('groups', config);
+            const { data } = await api.get('/api/groups', config);
             setGroups(data);
         } catch (err) {
             console.error("Failed to fetch groups:", err);
@@ -140,7 +140,7 @@ const MyGroups = () => {
         if (!newGroup.name) return;
 
         try {
-            const { data: createdGroup } = await api.post('groups', newGroup, config);
+            const { data: createdGroup } = await api.post('/api/groups', newGroup, config);
             
             // Re-fetch to ensure the new group appears correctly with a timestamp, 
             // or manually add and sort (Manual add is faster for UX, but sorting requires a correct timestamp)
@@ -162,7 +162,7 @@ const MyGroups = () => {
         if (!window.confirm("Are you sure you want to delete this group? This action cannot be undone.")) return;
 
         try {
-            await api.delete(`groups/${id}`, config);
+            await api.delete(`/api/groups/${id}`, config);
             setGroups(groups.filter(group => group._id !== id));
         } catch (err) {
             alert("Failed to delete group: " + (err.response?.data?.message || err.message));

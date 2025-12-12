@@ -24,7 +24,7 @@ const CourseDetails = () => {
 
     const fetchCourse = async () => {
         try {
-            const { data } = await api.get(`courses/${courseId}`, config);
+            const { data } = await api.get(`/api/courses/${courseId}`, config);
             setCourse(data);
             setError(null);
             
@@ -69,7 +69,7 @@ const CourseDetails = () => {
 
         try {
             const { data: updatedCourse } = await api.put(
-                `courses/${courseId}`, 
+                `/api/courses/${courseId}`, 
                 formData, 
                 config
             );

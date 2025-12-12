@@ -7,7 +7,7 @@ export default defineConfig({
   ],
   server: {
     proxy: {
-      // Proxy API during local dev to avoid CORS
+      // Proxy /api requests to backend, keeping the /api prefix
       '/api': {
         target: 'http://localhost:5000',
         changeOrigin: true,

@@ -67,7 +67,7 @@ const Courses = () => {
         if (!token) return;
         try {
             setLoading(true);
-            const { data } = await api.get('courses', config);
+            const { data } = await api.get('/api/courses', config);
             setCourses(data);
         } catch (err) {
             console.error("Failed to fetch courses:", err);
@@ -103,7 +103,7 @@ const Courses = () => {
     const handleCreateSubmit = async (e) => {
         e.preventDefault();
         try {
-            const { data } = await api.post('courses', newCourse, config);
+            const { data } = await api.post('/api/courses', newCourse, config);
             setCourses(prev => [...prev, data]);
             setIsCreateModalOpen(false);
             setNewCourse({ title: '', code: '', description: '' });
@@ -116,7 +116,7 @@ const Courses = () => {
     const handleDeleteCourse = async (id) => {
         if (!window.confirm("Delete this course?")) return;
         try {
-            await api.delete(`courses/${id}`, config);
+            await api.delete(`/api/courses/${id}`, config);
             setCourses(courses.filter(c => c._id !== id));
             alert("Course deleted successfully.");
         } catch (err) {

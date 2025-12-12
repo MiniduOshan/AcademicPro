@@ -1,8 +1,9 @@
 import axios from 'axios';
 
-// Use /api for production (proxied by Nginx to backend container)
-// For local dev, set VITE_API_URL=http://localhost:5000 in .env.local
-const BASE_URL = import.meta.env.VITE_API_URL || '/api';
+// Use empty baseURL - components will specify full paths like /api/users/login
+// In production, Nginx proxies /api to backend container
+// In dev, Vite proxies /api to localhost:5000
+const BASE_URL = import.meta.env.VITE_API_URL || '';
 
 const api = axios.create({
   baseURL: BASE_URL,

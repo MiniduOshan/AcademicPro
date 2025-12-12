@@ -75,7 +75,7 @@ const DashboardLayout = () => {
 
             try {
                 const config = { headers: { Authorization: `Bearer ${token}` } };
-                const { data } = await api.get('users/profile', config);
+                const { data } = await api.get('/api/users/profile', config);
                 setProfile(data); 
             } catch (err) {
                 console.error("Failed to fetch user profile for header:", err);

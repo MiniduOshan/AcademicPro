@@ -123,10 +123,10 @@ const DashboardSummary = () => {
 
     const fetchDashboardData = async () => {
         try {
-            const notesResponse = await api.get('notes', config);
+            const notesResponse = await api.get('/api/notes', config);
             const notes = notesResponse.data;
 
-            const groupsResponse = await api.get('groups', config);
+            const groupsResponse = await api.get('/api/groups', config);
             const groups = groupsResponse.data;
 
             const completed = notes.filter(n => n.status === 'Done').length;

@@ -125,7 +125,7 @@ const List = () => {
     /* -------- Fetch Notes -------- */
     const fetchNotes = async () => {
         try {
-            const { data } = await api.get('notes', config);
+            const { data } = await api.get('/api/notes', config);
             setNotes(data);
         } catch {
             setError("Failed to fetch notes.");
@@ -154,7 +154,7 @@ const List = () => {
         }
 
         try {
-            const { data } = await api.post('notes', newNote, config);
+            const { data } = await api.post('/api/notes', newNote, config);
             setNotes([...notes, data]);
             handleCloseModal();
         } catch {
@@ -166,7 +166,7 @@ const List = () => {
     const handleDeleteNote = async (id) => {
         if (!window.confirm("Delete this task?")) return;
 
-        await api.delete(`notes/${id}`, config);
+        await api.delete(`/api/notes/${id}`, config);
         setNotes(notes.filter(t => t._id !== id));
     };
 
@@ -178,7 +178,7 @@ const List = () => {
         try {
             // Send update to the server
             const { data: updatedNote } = await api.put(
-                `notes/${id}`, 
+                `/api/notes/${id}`, 
                 { status }, 
                 config
             );

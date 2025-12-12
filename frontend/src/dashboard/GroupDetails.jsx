@@ -87,7 +87,7 @@ const GroupDetails = () => {
 
     const fetchGroup = async () => {
         try {
-            const { data } = await api.get(`groups/${groupId}`, config);
+            const { data } = await api.get(`/api/groups/${groupId}`, config);
             setGroup(data);
         } catch (err) {
             console.error("Failed to fetch group details:", err);
@@ -140,7 +140,7 @@ const GroupDetails = () => {
         }
 
         try {
-            const updateUrl = `groups/${groupId}`;
+            const updateUrl = `/api/groups/${groupId}`;
             const { data } = await api.put(updateUrl, payload, config);
             
             setGroup(prev => ({
@@ -162,7 +162,7 @@ const GroupDetails = () => {
         if (!newComment.trim()) return;
 
         try {
-            const { data: newDisc } = await api.post(`groups/${groupId}/discuss`, { text: newComment }, config);
+            const { data: newDisc } = await api.post(`/api/groups/${groupId}/discuss`, { text: newComment }, config);
             
             setGroup(prev => ({
                 ...prev,
@@ -185,11 +185,11 @@ const GroupDetails = () => {
         setIsInviting(true);
 
         try {
-            const lookupUrl = `users/lookup?email=${newMemberEmail}`;
+            const lookupUrl = `/api/users/lookup?email=${newMemberEmail}`;
             const { data: userLookup } = await api.get(lookupUrl, config);
             const memberId = userLookup._id;
 
-            await api.post(`groups/${groupId}/members`, { memberId }, config);
+            await api.post(`/api/groups/${groupId}/members`, { memberId }, config);
 
             setGroup(prev => ({
                 ...prev,
@@ -217,7 +217,7 @@ const GroupDetails = () => {
         }
 
         try {
-            await api.delete(`groups/${groupId}/members`, { 
+            await api.delete(`/api/groups/${groupId}/members`, { 
                 ...config, 
                 data: { memberId }
             });
@@ -244,7 +244,7 @@ const GroupDetails = () => {
         setGroup(prev => ({ ...prev, projectStatus: newStatus }));
 
         try {
-            const updateUrl = `groups/${groupId}/assignment/status`;
+            const updateUrl = `/api/groups/${groupId}/assignment/status`;
             
             await api.put(updateUrl, { assignmentStatus: newStatus }, config);
             
@@ -261,7 +261,7 @@ const GroupDetails = () => {
         
         setIsDeleting(true);
         try {
-            await api.delete(`groups/${groupId}`, config);
+            await api.delete(`/api/groups/${groupId}`, config);
             
             alert("Group deleted successfully.");
             navigate('/dashboard/my-groups'); 

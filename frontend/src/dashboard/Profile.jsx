@@ -38,7 +38,7 @@ const Profile = () => {
                 return;
             }
             try {
-                const { data } = await api.get('users/profile', config);
+                const { data } = await api.get('/api/users/profile', config);
                 
                 const initialData = {
                     firstName: data.firstName || '',
@@ -79,7 +79,7 @@ const Profile = () => {
 
         try {
             // API call to update profile
-            const { data: responseData } = await api.put('users/profile', dataToSave, config);
+            const { data: responseData } = await api.put('/api/users/profile', dataToSave, config);
             
             // FIX: Update the token if the backend re-issues it after save (common for updates)
             if (responseData.token) {
