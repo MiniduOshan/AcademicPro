@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Prefer env-configured API base in production. Fallback to same-origin '/api'.
-const BASE_URL = import.meta.env?.VITE_API_BASE_URL || '/api';
+const BASE_URL = 'http://4.240.89.33:5000' || '/api';
 
 const api = axios.create({
   baseURL: BASE_URL,
