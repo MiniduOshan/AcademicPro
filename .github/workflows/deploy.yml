@@ -68,7 +68,7 @@ jobs:
               --name academicpro-frontend \
               --network academicpro-network \
               -p 80:80 \
-              -e VITE_API_URL=http://academicpro-backend:5000 \
+              -e VITE_API_URL=http://4.240.89.33:5000 \
               academicpro-frontend
 
             echo "==> Deployment completed successfully!"
