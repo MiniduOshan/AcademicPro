@@ -11,82 +11,59 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      # Removed the 'Set up SSH' step using webfactory/ssh-agent. 
-      # The appleboy/ssh-action handles the key directly.
+    - name: Deploy to Azure VM
+      uses: appleboy/ssh-action@v0.1.6
+      with:
+        host: ${{ secrets.AZURE_VM_IP }}
+        username: ${{ secrets.AZURE_VM_USER }}
+        key: ${{ secrets.AZURE_VM_SSH_KEY }}
+        script: |
+          PROJECT_DIR="/home/${{ secrets.AZURE_VM_USER }}/project"
 
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v0.1.6
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          port: ${{ secrets.SSH_PORT }}
-          # The appleboy/ssh-action is designed to accept the key directly for connection.
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          # Optional: You can specify a working directory if needed, 
-          # but for a full deployment script like this, it's often best to handle directories inside the script.
-          # working-directory: /home/${{ secrets.SSH_USER }}
-          script: |
-            # Exit immediately if a command exits with a non-zero status.
-            # Exit if any command in a pipeline fails.
-            set -euo pipefail
+          echo "Removing existing project folder..."
+          rm -rf $PROJECT_DIR
 
-            PROJECT_DIR="/home/${{ secrets.SSH_USER }}/project"
+          echo "Cloning fresh code..."
+          git clone https://github.com/MiniduOshan/AcademicPro.git $PROJECT_DIR
 
-            echo "Stopping old containers if any..."
-            # Use '|| true' to prevent script failure if containers/network don't exist
-            docker rm -f academicpro-backend academicpro-frontend || true
-            docker network prune -f || true
+          cd $PROJECT_DIR
 
-            if [ -d "$PROJECT_DIR" ]; then
-              cd "$PROJECT_DIR"
-              # Ensure to use the correct compose command (might be 'docker compose' or 'docker-compose')
-              # Assuming 'docker compose' is installed and correct for modern systems.
-              docker compose down --volumes --remove-orphans || true
-            fi
+          echo "Creating backend .env file..."
+          cat <<EOF > $PROJECT_DIR/backend/.env
+          PORT=5000
+          MONGO_URI=${{ secrets.MONGO_URI }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          CORS_ORIGIN=http://4.240.89.33
+          EOF
 
-            echo "Removing old project folder..."
-            # Use a check to ensure you don't delete an important directory by mistake
-            if [ -d "$PROJECT_DIR" ]; then
-              rm -rf "$PROJECT_DIR"
-            fi
+          echo "Creating frontend .env.production..."
+          cat <<EOF > $PROJECT_DIR/frontend/.env.production
+          VITE_API_URL=http://4.240.89.33:5000/api
+          EOF
 
-            echo "Cloning fresh repository..."
-            # Using 'git clone' inside the script requires that the remote server has 
-            # SSH keys or HTTPS access to the repository, which is often the case for public repos.
-            git clone https://github.com/MiniduOshan/AcademicPro.git "$PROJECT_DIR"
-            cd "$PROJECT_DIR"
+          echo "Building Frontend Docker image..."
+          docker build -t academicpro-frontend ./frontend
 
-            # --- Environment variables setup ---
-            # Define them here for clarity inside the SSH script context
-            PORT=5000
-            MONGO_URI="${{ secrets.MONGO_URI }}"
-            JWT_SECRET="${{ secrets.JWT_SECRET }}"
-            CORS_ORIGIN="http://4.240.89.33"
-            VITE_API_URL="http://4.240.89.33:5000/api"
+          echo "Building Backend Docker image..."
+          docker build -t academicpro-backend ./backend
 
-            # Creating backend .env file
-            echo "Creating backend .env file..."
-            cat > backend/.env <<EOF
-PORT=$PORT
-MONGO_URI=$MONGO_URI
-JWT_SECRET=$JWT_SECRET
-CORS_ORIGIN=$CORS_ORIGIN
-EOF
+          echo "Stopping old containers..."
+          docker stop academicpro-frontend || true
+          docker stop academicpro-backend || true
 
-            # Creating frontend .env.production
-            echo "Creating frontend .env.production..."
-            cat > frontend/.env.production <<EOF
-VITE_API_URL=$VITE_API_URL
-EOF
+          echo "Removing old containers..."
+          docker rm academicpro-frontend || true
+          docker rm academicpro-backend || true
 
-            # Verification (Optional but good practice)
-            echo "Verifying .env files..."
-            cat backend/.env
-            cat frontend/.env.production
+          echo "Starting new backend container..."
+          docker run -d --name academicpro-backend \
+          --env-file $PROJECT_DIR/backend/.env \
+          -p 5000:5000 academicpro-backend
 
-            echo "Starting Docker Compose..."
-            docker compose up -d --build --force-recreate
-            echo "Deployment completed successfully!"
+          echo "Starting new frontend container..."
+          docker run -d --name academicpro-frontend -p 80:80 academicpro-frontend
+
+          echo "Deployment completed successfully!"
