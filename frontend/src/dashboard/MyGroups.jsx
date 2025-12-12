@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { IoSearchOutline, IoChevronDown, IoTrashBinOutline } from 'react-icons/io5';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api/axios';
 import Modal from '../components/Modal.jsx';
 
-// DEPLOYMENT READY: Uses VITE environment variable for dynamic host switching
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'; 
 const STATUS_OPTIONS = ['In progress', 'Done']; 
 
 // --- GroupCard Component (FIXED) ---
@@ -88,7 +86,7 @@ const MyGroups = () => {
 
         try {
             setLoading(true);
-            const { data } = await axios.get(`${API_BASE_URL}/api/groups`, config);
+            const { data } = await api.get('groups', config);
             setGroups(data);
         } catch (err) {
             console.error("Failed to fetch groups:", err);
@@ -142,7 +140,7 @@ const MyGroups = () => {
         if (!newGroup.name) return;
 
         try {
-            const { data: createdGroup } = await axios.post(`${API_BASE_URL}/api/groups`, newGroup, config);
+            const { data: createdGroup } = await api.post('groups', newGroup, config);
             
             // Re-fetch to ensure the new group appears correctly with a timestamp, 
             // or manually add and sort (Manual add is faster for UX, but sorting requires a correct timestamp)
@@ -164,7 +162,7 @@ const MyGroups = () => {
         if (!window.confirm("Are you sure you want to delete this group? This action cannot be undone.")) return;
 
         try {
-            await axios.delete(`${API_BASE_URL}/api/groups/${id}`, config);
+            await api.delete(`groups/${id}`, config);
             setGroups(groups.filter(group => group._id !== id));
         } catch (err) {
             alert("Failed to delete group: " + (err.response?.data?.message || err.message));

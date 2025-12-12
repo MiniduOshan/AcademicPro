@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api/axios';
 import { motion } from "framer-motion";
 import { 
     IoCheckmarkCircleOutline, 
@@ -7,9 +7,6 @@ import {
     IoTimeOutline, 
     IoAlertCircleOutline 
 } from 'react-icons/io5';
-
-// API URL (dynamic)
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // --------------------------------------------------------------------------------------------------
 // STAT CARD (Animated)
@@ -126,10 +123,10 @@ const DashboardSummary = () => {
 
     const fetchDashboardData = async () => {
         try {
-            const notesResponse = await axios.get(`${API_BASE_URL}/api/notes`, config);
+            const notesResponse = await api.get('notes', config);
             const notes = notesResponse.data;
 
-            const groupsResponse = await axios.get(`${API_BASE_URL}/api/groups`, config);
+            const groupsResponse = await api.get('groups', config);
             const groups = groupsResponse.data;
 
             const completed = notes.filter(n => n.status === 'Done').length;

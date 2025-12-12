@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api/axios';
 import { IoEllipsisHorizontal, IoAdd, IoTrashBinOutline } from 'react-icons/io5';
 import Modal from '../components/Modal.jsx';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const STATUS_OPTIONS = ['To do', 'In progress', 'Done'];
 
 // 🎨 CUSTOM COLOR MAPPINGS (ADJUSTED FOR HIGH CONTRAST)
@@ -127,7 +125,7 @@ const List = () => {
     /* -------- Fetch Notes -------- */
     const fetchNotes = async () => {
         try {
-            const { data } = await axios.get(`${API_BASE_URL}/api/notes`, config);
+            const { data } = await api.get('notes', config);
             setNotes(data);
         } catch {
             setError("Failed to fetch notes.");
@@ -156,7 +154,7 @@ const List = () => {
         }
 
         try {
-            const { data } = await axios.post(`${API_BASE_URL}/api/notes`, newNote, config);
+            const { data } = await api.post('notes', newNote, config);
             setNotes([...notes, data]);
             handleCloseModal();
         } catch {
@@ -168,7 +166,7 @@ const List = () => {
     const handleDeleteNote = async (id) => {
         if (!window.confirm("Delete this task?")) return;
 
-        await axios.delete(`${API_BASE_URL}/api/notes/${id}`, config);
+        await api.delete(`notes/${id}`, config);
         setNotes(notes.filter(t => t._id !== id));
     };
 
@@ -179,8 +177,8 @@ const List = () => {
 
         try {
             // Send update to the server
-            const { data: updatedNote } = await axios.put(
-                `${API_BASE_URL}/api/notes/${id}`, 
+            const { data: updatedNote } = await api.put(
+                `notes/${id}`, 
                 { status }, 
                 config
             );

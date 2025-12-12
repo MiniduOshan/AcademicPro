@@ -8,10 +8,7 @@ import {
     IoPencilOutline 
 } from 'react-icons/io5';
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-
-// DEPLOYMENT READY: Use the dynamic API host
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'; 
+import api from '../api/axios'; 
 
 
 // --- Sub-Component: Profile Dropdown (Retained) ---
@@ -78,7 +75,7 @@ const DashboardLayout = () => {
 
             try {
                 const config = { headers: { Authorization: `Bearer ${token}` } };
-                const { data } = await axios.get(`${API_BASE_URL}/api/users/profile`, config);
+                const { data } = await api.get('users/profile', config);
                 setProfile(data); 
             } catch (err) {
                 console.error("Failed to fetch user profile for header:", err);

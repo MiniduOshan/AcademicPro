@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api/axios';
 import { IoSend, IoAdd, IoTrashBinOutline, IoPencil } from 'react-icons/io5';
-import Modal from '../components/Modal.jsx'; // Assuming Modal is available
+import Modal from '../components/Modal.jsx';
 
-// CRITICAL FIX: Use the VITE environment variable for dynamic host switching
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'; 
-// Added 'To do' back to the list since it's common for status tracking
 const STATUS_OPTIONS = ['To do', 'In progress', 'Done']; 
 
 
@@ -90,7 +87,7 @@ const GroupDetails = () => {
 
     const fetchGroup = async () => {
         try {
-            const { data } = await axios.get(`${API_BASE_URL}/api/groups/${groupId}`, config);
+            const { data } = await api.get(`groups/${groupId}`, config);
             setGroup(data);
         } catch (err) {
             console.error("Failed to fetch group details:", err);
@@ -143,8 +140,8 @@ const GroupDetails = () => {
         }
 
         try {
-            const updateUrl = `${API_BASE_URL}/api/groups/${groupId}`;
-            const { data } = await axios.put(updateUrl, payload, config);
+            const updateUrl = `groups/${groupId}`;
+            const { data } = await api.put(updateUrl, payload, config);
             
             setGroup(prev => ({
                 ...prev,
@@ -165,7 +162,7 @@ const GroupDetails = () => {
         if (!newComment.trim()) return;
 
         try {
-            const { data: newDisc } = await axios.post(`${API_BASE_URL}/api/groups/${groupId}/discuss`, { text: newComment }, config);
+            const { data: newDisc } = await api.post(`groups/${groupId}/discuss`, { text: newComment }, config);
             
             setGroup(prev => ({
                 ...prev,
@@ -188,11 +185,11 @@ const GroupDetails = () => {
         setIsInviting(true);
 
         try {
-            const lookupUrl = `${API_BASE_URL}/api/users/lookup?email=${newMemberEmail}`;
-            const { data: userLookup } = await axios.get(lookupUrl, config);
+            const lookupUrl = `users/lookup?email=${newMemberEmail}`;
+            const { data: userLookup } = await api.get(lookupUrl, config);
             const memberId = userLookup._id;
 
-            await axios.post(`${API_BASE_URL}/api/groups/${groupId}/members`, { memberId }, config);
+            await api.post(`groups/${groupId}/members`, { memberId }, config);
 
             setGroup(prev => ({
                 ...prev,
@@ -220,7 +217,7 @@ const GroupDetails = () => {
         }
 
         try {
-            await axios.delete(`${API_BASE_URL}/api/groups/${groupId}/members`, { 
+            await api.delete(`groups/${groupId}/members`, { 
                 ...config, 
                 data: { memberId }
             });
@@ -247,9 +244,9 @@ const GroupDetails = () => {
         setGroup(prev => ({ ...prev, projectStatus: newStatus }));
 
         try {
-            const updateUrl = `${API_BASE_URL}/api/groups/${groupId}/assignment/status`;
+            const updateUrl = `groups/${groupId}/assignment/status`;
             
-            await axios.put(updateUrl, { assignmentStatus: newStatus }, config);
+            await api.put(updateUrl, { assignmentStatus: newStatus }, config);
             
         } catch (err) {
             const message = err.response?.data?.message || err.message;
@@ -264,7 +261,7 @@ const GroupDetails = () => {
         
         setIsDeleting(true);
         try {
-            await axios.delete(`${API_BASE_URL}/api/groups/${groupId}`, config);
+            await api.delete(`groups/${groupId}`, config);
             
             alert("Group deleted successfully.");
             navigate('/dashboard/my-groups'); 

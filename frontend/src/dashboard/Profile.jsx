@@ -1,10 +1,7 @@
 import { IoPencilOutline, IoCameraOutline, IoSaveOutline, IoCloseOutline } from 'react-icons/io5';
 import { useState, useEffect } from 'react';
 import React from 'react';
-import axios from 'axios';
-
-// DEPLOYMENT READY: Use the dynamic API host
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'; 
+import api from '../api/axios'; 
 
 // 🎨 HIGH-CONTRAST COLOR MAPPINGS
 const ACCENT_PURPLE = 'purple-700'; // Used for Avatar, Focus states
@@ -41,7 +38,7 @@ const Profile = () => {
                 return;
             }
             try {
-                const { data } = await axios.get(`${API_BASE_URL}/api/users/profile`, config);
+                const { data } = await api.get('users/profile', config);
                 
                 const initialData = {
                     firstName: data.firstName || '',
@@ -82,7 +79,7 @@ const Profile = () => {
 
         try {
             // API call to update profile
-            const { data: responseData } = await axios.put(`${API_BASE_URL}/api/users/profile`, dataToSave, config);
+            const { data: responseData } = await api.put('users/profile', dataToSave, config);
             
             // FIX: Update the token if the backend re-issues it after save (common for updates)
             if (responseData.token) {

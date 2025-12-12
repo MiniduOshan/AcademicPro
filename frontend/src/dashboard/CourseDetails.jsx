@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { IoArrowBackOutline, IoPersonOutline, IoPencil, IoSaveOutline } from 'react-icons/io5';
-
-// Use the VITE environment variable for dynamic host switching
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'; 
+import api from '../api/axios';
+import { IoArrowBackOutline, IoPersonOutline, IoPencil, IoSaveOutline } from 'react-icons/io5'; 
 // Assuming Modal is also imported if needed, but not shown here
 
 const CourseDetails = () => {
@@ -27,7 +24,7 @@ const CourseDetails = () => {
 
     const fetchCourse = async () => {
         try {
-            const { data } = await axios.get(`${API_BASE_URL}/api/courses/${courseId}`, config);
+            const { data } = await api.get(`courses/${courseId}`, config);
             setCourse(data);
             setError(null);
             
@@ -71,8 +68,8 @@ const CourseDetails = () => {
         }
 
         try {
-            const { data: updatedCourse } = await axios.put(
-                `${API_BASE_URL}/api/courses/${courseId}`, 
+            const { data: updatedCourse } = await api.put(
+                `courses/${courseId}`, 
                 formData, 
                 config
             );

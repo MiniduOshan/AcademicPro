@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { IoSearchOutline, IoTrashBinOutline, IoEyeOutline } from 'react-icons/io5';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api/axios';
 import Modal from '../components/Modal.jsx';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 // -------------------------
 // COURSE CARD (UPDATED)
@@ -69,7 +67,7 @@ const Courses = () => {
         if (!token) return;
         try {
             setLoading(true);
-            const { data } = await axios.get(`${API_BASE_URL}/api/courses`, config);
+            const { data } = await api.get('courses', config);
             setCourses(data);
         } catch (err) {
             console.error("Failed to fetch courses:", err);
@@ -105,7 +103,7 @@ const Courses = () => {
     const handleCreateSubmit = async (e) => {
         e.preventDefault();
         try {
-            const { data } = await axios.post(`${API_BASE_URL}/api/courses`, newCourse, config);
+            const { data } = await api.post('courses', newCourse, config);
             setCourses(prev => [...prev, data]);
             setIsCreateModalOpen(false);
             setNewCourse({ title: '', code: '', description: '' });
@@ -118,7 +116,7 @@ const Courses = () => {
     const handleDeleteCourse = async (id) => {
         if (!window.confirm("Delete this course?")) return;
         try {
-            await axios.delete(`${API_BASE_URL}/api/courses/${id}`, config);
+            await api.delete(`courses/${id}`, config);
             setCourses(courses.filter(c => c._id !== id));
             alert("Course deleted successfully.");
         } catch (err) {
