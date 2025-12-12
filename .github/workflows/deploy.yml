@@ -41,7 +41,7 @@ jobs:
 
           echo "Creating frontend .env.production..."
           cat <<EOF > $PROJECT_DIR/frontend/.env.production
-          VITE_API_URL=http://4.240.89.33:5000/api
+          VITE_API_URL=http://4.240.89.33:5000
           EOF
 
           echo "Building Frontend Docker image..."
