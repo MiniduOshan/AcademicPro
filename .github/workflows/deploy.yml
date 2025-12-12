@@ -40,12 +40,22 @@ jobs:
           EOF
 
           echo "Creating frontend .env.production for Vite build..."
-          echo "VITE_API_URL=" > $PROJECT_DIR/frontend/.env.production
+          cat > $PROJECT_DIR/frontend/.env.production << 'ENVEOF'
+VITE_API_URL=
+ENVEOF
+
+          echo "Verifying .env files created..."
+          echo "Backend .env:"
+          cat $PROJECT_DIR/backend/.env
+          echo ""
+          echo "Frontend .env.production:"
+          cat $PROJECT_DIR/frontend/.env.production
 
           echo "Stopping and removing old containers..."
           docker-compose down || true
+          docker system prune -f || true
 
           echo "Building and starting containers with docker-compose..."
-          docker-compose up -d --build
+          docker-compose up -d --build --force-recreate
 
           echo "Deployment completed successfully!"

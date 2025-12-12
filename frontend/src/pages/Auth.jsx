@@ -74,7 +74,10 @@ const Auth = ({ type }) => {
       localStorage.setItem('token', data.token); // Save token
       navigate('/dashboard');
     } catch (err) {
-      const errorMessage = err.response?.data?.message || 'Network Error';
+      console.error('Login error:', err);
+      console.error('Error response:', err.response);
+      console.error('Error request:', err.request);
+      const errorMessage = err.response?.data?.message || err.message || 'Network Error';
       setError(`Authentication failed: ${errorMessage}`);
     }
   };
