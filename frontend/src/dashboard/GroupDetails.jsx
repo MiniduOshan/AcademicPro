@@ -5,7 +5,7 @@ import { IoSend, IoAdd, IoTrashBinOutline, IoPencil } from 'react-icons/io5';
 import Modal from '../components/Modal.jsx'; // Assuming Modal is available
 
 // CRITICAL FIX: Use the VITE environment variable for dynamic host switching
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'; 
+const API_BASE_URL = 'http://academicpro-backend:5000' || 'http://localhost:5000'; 
 // Added 'To do' back to the list since it's common for status tracking
 const STATUS_OPTIONS = ['To do', 'In progress', 'Done']; 
 

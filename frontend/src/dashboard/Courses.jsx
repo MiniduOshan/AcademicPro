@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Modal from '../components/Modal.jsx';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_BASE_URL = 'http://academicpro-backend:5000' || 'http://localhost:5000';
 
 // -------------------------
 // COURSE CARD (UPDATED)
