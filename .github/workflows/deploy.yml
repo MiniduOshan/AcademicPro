@@ -25,10 +25,12 @@ jobs:
 
             PROJECT_DIR="/home/${{ secrets.AZURE_VM_USER }}/project"
 
-            echo "Stopping old containers..."
-            cd "$PROJECT_DIR" || true
-            docker-compose down || true
-            docker system prune -f || true
+            echo "Stopping old containers if any..."
+            if [ -d "$PROJECT_DIR" ]; then
+              cd "$PROJECT_DIR"
+              docker compose down || true
+              docker system prune -f || true
+            fi
 
             echo "Removing old project folder..."
             rm -rf "$PROJECT_DIR"
@@ -38,23 +40,19 @@ jobs:
             cd "$PROJECT_DIR"
 
             echo "Creating backend .env file..."
-            cat > "$PROJECT_DIR/backend/.env" <<EOF
-            PORT=5000
-            MONGO_URI=${{ secrets.MONGO_URI }}
-            JWT_SECRET=${{ secrets.JWT_SECRET }}
-            CORS_ORIGIN=http://4.240.89.33
-            EOF
+            echo -e "PORT=5000\nMONGO_URI=${{ secrets.MONGO_URI }}\nJWT_SECRET=${{ secrets.JWT_SECRET }}\nCORS_ORIGIN=http://4.240.89.33" > "$PROJECT_DIR/backend/.env"
 
             echo "Creating frontend .env.production for Vite..."
-            cat > "$PROJECT_DIR/frontend/.env.production" <<EOF
-            VITE_API_URL=http://4.240.89.33:5000/api
-            EOF
+            echo "VITE_API_URL=http://4.240.89.33:5000/api" > "$PROJECT_DIR/frontend/.env.production"
 
             echo "Verifying .env files..."
+            echo "Backend .env:"
             cat "$PROJECT_DIR/backend/.env"
+            echo ""
+            echo "Frontend .env.production:"
             cat "$PROJECT_DIR/frontend/.env.production"
 
             echo "Building and starting containers..."
-            docker-compose up -d --build --force-recreate
+            docker compose up -d --build --force-recreate
 
             echo "Deployment completed successfully!"
