@@ -11,7 +11,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 // DEPLOYMENT READY: Use the dynamic API host
-const API_BASE_URL = 'http://academicpro-backend:5000' || 'http://localhost:5000'; 
+const API_BASE_URL = 'http://4.240.89.33:5000' || 'http://localhost:5000'; 
 
 
 // --- Sub-Component: Profile Dropdown (Retained) ---

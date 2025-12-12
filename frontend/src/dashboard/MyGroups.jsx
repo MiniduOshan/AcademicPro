@@ -5,7 +5,7 @@ import axios from 'axios';
 import Modal from '../components/Modal.jsx';
 
 // DEPLOYMENT READY: Uses VITE environment variable for dynamic host switching
-const API_BASE_URL = 'http://academicpro-backend:5000' || 'http://localhost:5000'; 
+const API_BASE_URL = 'http://4.240.89.33:5000' || 'http://localhost:5000'; 
 const STATUS_OPTIONS = ['In progress', 'Done']; 
 
 // --- GroupCard Component (FIXED) ---

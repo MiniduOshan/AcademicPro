@@ -4,7 +4,7 @@ import axios from 'axios';
 import { IoArrowBackOutline, IoPersonOutline, IoPencil, IoSaveOutline } from 'react-icons/io5';
 
 // Use the VITE environment variable for dynamic host switching
-const API_BASE_URL = 'http://academicpro-backend:5000' || 'http://localhost:5000'; 
+const API_BASE_URL = 'http://4.240.89.33:5000' || 'http://localhost:5000'; 
 // Assuming Modal is also imported if needed, but not shown here
 
 const CourseDetails = () => {

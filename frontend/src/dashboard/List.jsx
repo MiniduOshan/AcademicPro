@@ -3,7 +3,7 @@ import axios from 'axios';
 import { IoEllipsisHorizontal, IoAdd, IoTrashBinOutline } from 'react-icons/io5';
 import Modal from '../components/Modal.jsx';
 
-const API_BASE_URL = 'http://academicpro-backend:5000' || 'http://localhost:5000';
+const API_BASE_URL = 'http://4.240.89.33:5000' || 'http://localhost:5000';
 const STATUS_OPTIONS = ['To do', 'In progress', 'Done'];
 
 // 🎨 CUSTOM COLOR MAPPINGS (ADJUSTED FOR HIGH CONTRAST)

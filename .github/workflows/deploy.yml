@@ -33,37 +33,29 @@ jobs:
 
           echo "Creating .env file for backend..."
           cat <<EOF > $PROJECT_DIR/backend/.env
-PORT=${{ secrets.PORT }}
-MONGO_URI=${{ secrets.MONGO_URI }}
-JWT_SECRET=${{ secrets.JWT_SECRET }}
-EOF
-
-          # Create Docker network if it doesn't exist
-          sudo docker network inspect academicpro-network >/dev/null 2>&1 || sudo docker network create academicpro-network
+          PORT=${{ secrets.PORT }}
+          MONGO_URI=${{ secrets.MONGO_URI }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          EOF
 
           echo "Building Frontend Docker image..."
-          sudo docker build -t academicpro-frontend ./frontend
+          docker build -t academicpro-frontend ./frontend
 
           echo "Building Backend Docker image..."
-          sudo docker build -t academicpro-backend ./backend
+          docker build -t academicpro-backend ./backend
 
           echo "Stopping old containers..."
-          sudo docker stop academicpro-frontend || true
-          sudo docker stop academicpro-backend || true
+          docker stop academicpro-frontend || true
+          docker stop academicpro-backend || true
 
           echo "Removing old containers..."
-          sudo docker rm academicpro-frontend || true
-          sudo docker rm academicpro-backend || true
+          docker rm academicpro-frontend || true
+          docker rm academicpro-backend || true
 
           echo "Starting new backend container..."
-          sudo docker run -d --name academicpro-backend \
-            --network academicpro-network \
-            --env-file $PROJECT_DIR/backend/.env \
-            -p 5000:5000 academicpro-backend
+          docker run -d --name academicpro-backend --env-file $PROJECT_DIR/backend/.env -p 5000:5000 academicpro-backend
 
           echo "Starting new frontend container..."
-          sudo docker run -d --name academicpro-frontend \
-            --network academicpro-network \
-            -p 80:80 academicpro-frontend
+          docker run -d --name academicpro-frontend -p 80:80 academicpro-frontend
 
           echo "Deployment completed successfully!"
