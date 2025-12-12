@@ -9,7 +9,7 @@ import {
 } from 'react-icons/io5';
 
 // API URL (dynamic)
-const API_BASE_URL = 'http://4.240.89.33:5000' || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // --------------------------------------------------------------------------------------------------
 // STAT CARD (Animated)

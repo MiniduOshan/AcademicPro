@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Modal from '../components/Modal.jsx';
 
-const API_BASE_URL = 'http://4.240.89.33:5000';
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 // -------------------------
 // COURSE CARD (UPDATED)

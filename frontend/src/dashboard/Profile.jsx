@@ -4,7 +4,7 @@ import React from 'react';
 import axios from 'axios';
 
 // DEPLOYMENT READY: Use the dynamic API host
-const API_BASE_URL = 'http://4.240.89.33:5000' || 'http://localhost:5000'; 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'; 
 
 // 🎨 HIGH-CONTRAST COLOR MAPPINGS
 const ACCENT_PURPLE = 'purple-700'; // Used for Avatar, Focus states
