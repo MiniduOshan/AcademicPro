@@ -11,11 +11,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # 1. Checkout code
+    # Checkout repo (not used but required)
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    # 2. SSH into Azure VM and build/run containers
     - name: Deploy to Azure VM
       uses: appleboy/ssh-action@v0.1.6
       with:
@@ -23,27 +22,31 @@ jobs:
         username: ${{ secrets.AZURE_VM_USER }}
         key: ${{ secrets.AZURE_VM_SSH_KEY }}
         script: |
-          # Navigate to project directory or clone repo
-          if [ ! -d "/home/${{ secrets.AZURE_VM_USER }}/project" ]; then
-            git clone https://github.com/MiniduOshan/AcademicPro.git
+          PROJECT_DIR="/home/${{ secrets.AZURE_VM_USER }}/AcademicPro"
+
+          # Clone if project folder not exists
+          if [ ! -d "$PROJECT_DIR" ]; then
+            git clone https://github.com/MiniduOshan/AcademicPro.git $PROJECT_DIR
           fi
-          cd project
+
+          # Move inside project
+          cd $PROJECT_DIR
+
+          # Pull latest updates
           git pull origin main
 
-          # Build frontend Docker image
+          # Build Docker images
           docker build -t frontend:latest ./frontend
-          
-          # Build backend Docker image
           docker build -t backend:latest ./backend
 
-          # Stop old containers if running
+          # Stop and remove old containers
           docker stop frontend || true
           docker stop backend || true
           docker rm frontend || true
           docker rm backend || true
 
-          # Run backend container
+          # Run backend
           docker run -d --name backend -p 5000:5000 backend:latest
 
-          # Run frontend container
+          # Run frontend
           docker run -d --name frontend -p 80:5173 frontend:latest
