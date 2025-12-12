@@ -34,10 +34,20 @@ app.use('/api/notes', noteRoutes);
 app.use('/api/groups', groupRoutes); // New Group Route
 app.use('/api/courses', courseRoutes);
 
+// 404 handler for undefined routes
+app.use((req, res, next) => {
+    console.log(`404 - Route not found: ${req.method} ${req.url}`);
+    res.status(404).json({ 
+        message: 'Route not found',
+        path: req.url,
+        method: req.method
+    });
+});
+
 // Fallback Error Handling Middleware
 app.use((err, req, res, next) => {
     console.error(err.stack);
-    res.status(500).send('Something broke!');
+    res.status(500).json({ message: 'Something broke!', error: err.message });
 });
 
 app.listen(PORT, () => {
