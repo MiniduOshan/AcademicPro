@@ -11,10 +11,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # Checkout repo (not used but required)
+    # 1. Checkout code (local only, SSH server will clone again)
     - name: Checkout repository
       uses: actions/checkout@v3
 
+    # 2. Deploy inside Azure VM
     - name: Deploy to Azure VM
       uses: appleboy/ssh-action@v0.1.6
       with:
@@ -22,31 +23,37 @@ jobs:
         username: ${{ secrets.AZURE_VM_USER }}
         key: ${{ secrets.AZURE_VM_SSH_KEY }}
         script: |
-          PROJECT_DIR="/home/${{ secrets.AZURE_VM_USER }}/AcademicPro"
+          echo "Pulling latest code from public GitHub repo..."
 
-          # Clone if project folder not exists
-          if [ ! -d "$PROJECT_DIR" ]; then
-            git clone https://github.com/MiniduOshan/AcademicPro.git $PROJECT_DIR
+          # If folder doesn't exist, clone fresh
+          if [ ! -d "/home/${{ secrets.AZURE_VM_USER }}/project" ]; then
+            git clone https://github.com/MiniduOshan/AcademicPro.git project
           fi
 
-          # Move inside project
-          cd $PROJECT_DIR
+          cd project
 
-          # Pull latest updates
+          # Pull latest changes
+          git reset --hard HEAD
           git pull origin main
 
-          # Build Docker images
-          docker build -t frontend:latest ./frontend
-          docker build -t backend:latest ./backend
+          echo "Building Frontend Docker image..."
+          docker build -t academicpro-frontend ./frontend
 
-          # Stop and remove old containers
-          docker stop frontend || true
-          docker stop backend || true
-          docker rm frontend || true
-          docker rm backend || true
+          echo "Building Backend Docker image..."
+          docker build -t academicpro-backend ./backend
 
-          # Run backend
-          docker run -d --name backend -p 5000:5000 backend:latest
+          echo "Stopping old containers..."
+          docker stop academicpro-frontend || true
+          docker stop academicpro-backend || true
 
-          # Run frontend
-          docker run -d --name frontend -p 80:5173 frontend:latest
+          echo "Removing old containers..."
+          docker rm academicpro-frontend || true
+          docker rm academicpro-backend || true
+
+          echo "Starting new backend..."
+          docker run -d --name academicpro-backend -p 5000:5000 academicpro-backend
+
+          echo "Starting new frontend..."
+          docker run -d --name academicpro-frontend -p 80:80 academicpro-frontend
+
+          echo "Deployment completed successfully!"
