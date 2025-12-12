@@ -40,9 +40,7 @@ jobs:
           EOF
 
           echo "Creating frontend .env.production for Vite build..."
-          cat <<'EOF' > $PROJECT_DIR/frontend/.env.production
-VITE_API_URL=
-EOF
+          echo "VITE_API_URL=" > $PROJECT_DIR/frontend/.env.production
 
           echo "Stopping and removing old containers..."
           docker-compose down || true
