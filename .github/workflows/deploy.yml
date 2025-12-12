@@ -39,8 +39,10 @@ jobs:
           CORS_ORIGIN=http://4.240.89.33
           EOF
 
-          echo "Removing .env.production (not needed - using /api proxy)..."
-          rm -f $PROJECT_DIR/frontend/.env.production
+          echo "Creating frontend .env.production for Vite build..."
+          cat <<'EOF' > $PROJECT_DIR/frontend/.env.production
+VITE_API_URL=
+EOF
 
           echo "Stopping and removing old containers..."
           docker-compose down || true
