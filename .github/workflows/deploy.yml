@@ -11,11 +11,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # 1. Checkout code (local only, SSH server will clone again)
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    # 2. Deploy inside Azure VM
     - name: Deploy to Azure VM
       uses: appleboy/ssh-action@v0.1.6
       with:
@@ -23,18 +21,13 @@ jobs:
         username: ${{ secrets.AZURE_VM_USER }}
         key: ${{ secrets.AZURE_VM_SSH_KEY }}
         script: |
-          echo "Pulling latest code from public GitHub repo..."
+          echo "Removing existing project folder..."
+          rm -rf /home/${{ secrets.AZURE_VM_USER }}/project
 
-          # If folder doesn't exist, clone fresh
-          if [ ! -d "/home/${{ secrets.AZURE_VM_USER }}/project" ]; then
-            git clone https://github.com/MiniduOshan/AcademicPro.git project
-          fi
+          echo "Cloning fresh code..."
+          git clone https://github.com/MiniduOshan/AcademicPro.git /home/${{ secrets.AZURE_VM_USER }}/project
 
-          cd project
-
-          # Pull latest changes
-          git reset --hard HEAD
-          git pull origin main
+          cd /home/${{ secrets.AZURE_VM_USER }}/project
 
           echo "Building Frontend Docker image..."
           docker build -t academicpro-frontend ./frontend
