@@ -19,6 +19,8 @@ jobs:
           host: ${{ secrets.VM_IP_ADDRESS }}
           username: ${{ secrets.VM_USERNAME }}
           key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
+          # optional: set port if not 22
+          # port: ${{ secrets.VM_SSH_PORT }}
           script: |
             set -e
 
@@ -32,8 +34,17 @@ jobs:
               sudo npm i -g pm2
             fi
 
-            # 1. Navigate to the app directory (ensure repo is already cloned on VM)
-            cd ~/AcademicPro
+            # 1. Ensure repo is present in ~/AcademicPro
+            if [ ! -d "$HOME/AcademicPro/.git" ]; then
+              echo "Repository not found in ~/AcademicPro. Cloning..."
+              if [ -z "${{ secrets.VM_REPO_URL }}" ]; then
+                echo "VM_REPO_URL secret not set. Please add a HTTPS git URL to secrets."
+                exit 1
+              fi
+              rm -rf "$HOME/AcademicPro"
+              git clone "${{ secrets.VM_REPO_URL }}" "$HOME/AcademicPro"
+            fi
+            cd "$HOME/AcademicPro"
 
             # 2. Pull the latest code
             git pull origin main
