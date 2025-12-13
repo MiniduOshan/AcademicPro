@@ -20,6 +20,7 @@ const Profile = () => {
     });
     const [tempPicUrl, setTempPicUrl] = useState(''); // To hold the URL during image edit prompt
     const [error, setError] = useState(null);
+    const fileInputRef = React.useRef(null); // Reference for file input
 
     const token = localStorage.getItem('token');
     const config = { headers: { Authorization: `Bearer ${token}` } };
@@ -67,14 +68,11 @@ const Profile = () => {
     const handleSave = async (e) => {
         e.preventDefault();
 
-        // Use the final URL from the prompt (if changed)
-        const finalPicUrl = tempPicUrl || profileData.profilePic;
-
         const dataToSave = {
             firstName: profileData.firstName,
             lastName: profileData.lastName,
             mobileNumber: profileData.mobileNumber === 'Add number' ? '' : profileData.mobileNumber,
-            profilePic: finalPicUrl, // Send the updated URL string
+            // Note: profilePic is now handled separately via file upload
         };
 
         try {
@@ -87,7 +85,7 @@ const Profile = () => {
             }
             
             // FIX: Update local state with the saved data
-            setProfileData({ ...profileData, ...dataToSave, profilePic: finalPicUrl });
+            setProfileData({ ...profileData, ...dataToSave });
             
             setIsEditing(false);
             alert('Profile Updated Successfully!');
@@ -122,13 +120,37 @@ const Profile = () => {
         });
     };
     
-    // Allows editing the profile picture URL directly
-    const handlePictureChange = () => {
-          const newPicUrl = prompt("Enter new Profile Picture URL (Must be a direct image link):", tempPicUrl);
-          if (newPicUrl) {
-              // Store the new URL temporarily until save
-              setTempPicUrl(newPicUrl);
-          }
+    // Allows editing the profile picture via file upload
+    const handlePictureChange = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            alert('Please select a valid image file');
+            return;
+        }
+
+        // Create FormData for multipart upload
+        const formData = new FormData();
+        formData.append('profilePic', file);
+
+        try {
+            const { data } = await api.post('/api/users/upload-profile-pic', formData, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            // Update profile data with new image
+            setProfileData({ ...profileData, profilePic: data.profilePic });
+            setTempPicUrl(data.profilePic);
+            alert('Profile picture updated successfully!');
+        } catch (err) {
+            console.error('Picture upload failed:', err);
+            alert('Failed to upload picture: ' + (err.response?.data?.message || err.message));
+        }
     };
 
     // --- RENDER HELPERS ---
@@ -168,15 +190,24 @@ const Profile = () => {
                         
                         {/* Camera Button */}
                         {isEditing && (
-                            <button 
-                                onClick={handlePictureChange}
-                                type="button"
-                                // Camera button color updated to ACCENT_PURPLE
-                                className={`absolute bottom-0 right-0 p-2 bg-${ACCENT_PURPLE} text-white rounded-full border-2 border-white hover:bg-purple-800 transition-colors shadow-md`}
-                                title="Change Picture URL"
-                            >
-                                <IoCameraOutline className="w-5 h-5" />
-                            </button>
+                            <>
+                                <button 
+                                    onClick={() => fileInputRef.current?.click()}
+                                    type="button"
+                                    // Camera button color updated to ACCENT_PURPLE
+                                    className={`absolute bottom-0 right-0 p-2 bg-${ACCENT_PURPLE} text-white rounded-full border-2 border-white hover:bg-purple-800 transition-colors shadow-md`}
+                                    title="Change Profile Picture"
+                                >
+                                    <IoCameraOutline className="w-5 h-5" />
+                                </button>
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handlePictureChange}
+                                    className="hidden"
+                                />
+                            </>
                         )}
                     </div>
                     

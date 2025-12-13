@@ -90,17 +90,17 @@ const Contact = () => {
                     
                     <div className="flex items-center space-x-3 text-gray-600">
                         <IoMailOutline className="w-6 h-6 text-primary-500" />
-                        <span className="font-medium">support@platform.com</span>
+                        <span className="font-medium">miniduoshan23@gmail.com</span>
                     </div>
                     
                     <div className="flex items-center space-x-3 text-gray-600">
                         <IoCallOutline className="w-6 h-6 text-primary-500" />
-                        <span className="font-medium">+1 (555) 123-4567</span>
+                        <span className="font-medium">+94762288794</span>
                     </div>
                     
                     <div className="flex items-center space-x-3 text-gray-600">
                         <IoLocationOutline className="w-6 h-6 text-primary-500" />
-                        <span className="font-medium">123 Learning Lane, Knowledge City, USA</span>
+                        <span className="font-medium">Homagama, Sri Lanka</span>
                     </div>
                 </div>
             </div>

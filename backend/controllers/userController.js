@@ -158,10 +158,42 @@ const updateUserProfile = async (req, res) => {
     }
 };
 
+// @desc 	Upload user profile picture
+// @route 	POST /api/users/upload-profile-pic
+// @access 	Private (Requires JWT via 'protect' middleware)
+const uploadProfilePic = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+
+        const user = await User.findById(req.user._id);
+        
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Store the file path relative to the uploads directory
+        user.profilePic = `/uploads/${req.file.filename}`;
+        
+        const updatedUser = await user.save();
+
+        res.json({
+            message: 'Profile picture uploaded successfully',
+            profilePic: user.profilePic,
+            ...getUserResponse(updatedUser)
+        });
+    } catch (error) {
+        console.error('Upload error:', error);
+        res.status(500).json({ message: 'File upload failed: ' + error.message });
+    }
+};
+
 export default {
     registerUser,
     authUser,
     getUserByEmail, 
     getUserProfile,
     updateUserProfile, // <--- Preserved and updated
+    uploadProfilePic,   // <--- New file upload endpoint
 };

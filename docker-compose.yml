@@ -9,6 +9,8 @@ services:
       - "5000:5000"
     env_file:
       - ./backend/.env
+    volumes:
+      - uploads-data:/app/uploads
     networks:
       - academicpro-network
 
@@ -26,3 +28,7 @@ services:
 networks:
   academicpro-network:
     driver: bridge
+
+volumes:
+  uploads-data:
+    driver: local

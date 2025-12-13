@@ -12,18 +12,19 @@ function Footer() {
                     <div>
                         <h3 className="text-lg font-semibold mb-4">Company</h3>
                         <ul className="space-y-2 text-sm text-gray-400">
+                            <li><Link to="/" className="hover:text-blue-400">Home</Link></li>
                             <li><Link to="/about" className="hover:text-blue-400">About Us</Link></li>
                             <li><Link to="/contact" className="hover:text-blue-400">Contact</Link></li>
-                            <li><Link to="/careers" className="hover:text-blue-400">Careers</Link></li>
+                            
                         </ul>
                     </div>
                     {/* Column 2: Resources */}
                     <div>
                         <h3 className="text-lg font-semibold mb-4">Resources</h3>
                         <ul className="space-y-2 text-sm text-gray-400">
-                            <li><Link to="/faq" className="hover:text-blue-400">FAQ</Link></li>
-                            <li><Link to="/support" className="hover:text-blue-400">Support</Link></li>
-                            <li><Link to="/terms" className="hover:text-blue-400">Terms of Service</Link></li>
+                            <li><Link to="/contact" className="hover:text-blue-400">FAQ</Link></li>
+                            <li><Link to="/contact" className="hover:text-blue-400">Support</Link></li>
+                            <li><Link to="/contact" className="hover:text-blue-400">Terms of Service</Link></li>
                         </ul>
                     </div>
                     {/* Column 3: Social */}
@@ -31,9 +32,9 @@ function Footer() {
                         <h3 className="text-lg font-semibold mb-4">Connect</h3>
                         <div className="flex space-x-4">
                             {/* Placeholder for social media icons */}
-                            <a href="#" className="hover:text-blue-400">FB</a>
-                            <a href="#" className="hover:text-blue-400">X</a>
-                            <a href="#" className="hover:text-blue-400">In</a>
+                            <a href="/contact" className="hover:text-blue-400">FB</a>
+                            <a href="/contact" className="hover:text-blue-400">X</a>
+                            <a href="/contact" className="hover:text-blue-400">In</a>
                         </div>
                     </div>
                     {/* Column 4: Newsletter/Branding */}

@@ -18,6 +18,13 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  
+  // For FormData (file uploads), don't force JSON content-type
+  // Let the browser set it automatically with the boundary
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type'];
+  }
+  
   // Log the request for debugging
   console.log(`API Request: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
   return config;
